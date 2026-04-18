@@ -13,7 +13,7 @@ final class CoreDataRecordRepository: RecordRepository {
 
     init(logger: AppLogger) {
         self.logger = logger
-        self.stack = CoreDataStack(modelName: "RecordModel", logger: logger)
+        self.stack = CoreDataStack(logger: logger)
     }
 
     func save(_ item: RecordItem) throws {
@@ -24,7 +24,11 @@ final class CoreDataRecordRepository: RecordRepository {
         request.fetchLimit = 1
         request.predicate = NSPredicate(format: "id == %@", item.id as CVarArg)
 
-        let entity = try context.fetch(request).first ?? NSManagedObject(entity: NSEntityDescription.entity(forEntityName: "StoredRecord", in: context)!, insertInto: context)
+        let entity = try context.fetch(request).first
+            ?? NSManagedObject(
+                entity: NSEntityDescription.entity(forEntityName: "StoredRecord", in: context)!,
+                insertInto: context
+            )
 
         entity.setValue(item.id, forKey: "id")
         entity.setValue(item.createdAt, forKey: "createdAt")
@@ -45,10 +49,13 @@ final class CoreDataRecordRepository: RecordRepository {
     func fetchAll(unresolvedOnly: Bool) throws -> [RecordItem] {
         let context = stack.container.viewContext
         let request = NSFetchRequest<NSManagedObject>(entityName: "StoredRecord")
+
         if unresolvedOnly {
             request.predicate = NSPredicate(format: "unresolved == YES")
         }
+
         request.sortDescriptors = [NSSortDescriptor(key: "updatedAt", ascending: false)]
+
         return try context.fetch(request).compactMap(mapManagedObject)
     }
 
@@ -57,6 +64,7 @@ final class CoreDataRecordRepository: RecordRepository {
         let request = NSFetchRequest<NSManagedObject>(entityName: "StoredRecord")
         request.fetchLimit = 1
         request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+
         return try context.fetch(request).first.flatMap(mapManagedObject)
     }
 

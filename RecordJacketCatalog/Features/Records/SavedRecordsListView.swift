@@ -13,7 +13,8 @@ struct SavedRecordsListView: View {
                                 session: ReviewSession(record: item),
                                 repository: viewModel.repository,
                                 discogs: LiveDiscogsLookupService(logger: AppLogger(category: "RetryLookup"))
-                            ) {
+                            ),
+                            onSaved: {
                                 viewModel.load()
                             }
                         )

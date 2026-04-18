@@ -1,7 +1,9 @@
 import Foundation
+internal import Combine
 
 @MainActor
 final class CaptureViewModel: ObservableObject {
+
     @Published var isBusy = false
     @Published var errorMessage: String?
 
@@ -34,6 +36,7 @@ final class CaptureViewModel: ObservableObject {
                 case .success(let data):
                     let path = self.persistCaptureData(data)
                     let ocrResult = await self.ocr.processImageData(data)
+
                     let session = ReviewSession(
                         imagePath: path,
                         rawOCRText: ocrResult.rawText,
@@ -45,8 +48,10 @@ final class CaptureViewModel: ObservableObject {
                         unresolved: false,
                         tags: []
                     )
+
                     self.isBusy = false
                     onComplete(session)
+
                 case .failure(let error):
                     self.logger.error("Capture failed: \(error.localizedDescription)")
                     self.errorMessage = "Capture failed. Please try again."
@@ -59,11 +64,13 @@ final class CaptureViewModel: ObservableObject {
     private func persistCaptureData(_ data: Data) -> String {
         let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         let file = dir.appendingPathComponent("capture-\(UUID().uuidString).jpg")
+
         do {
             try data.write(to: file)
         } catch {
             logger.error("Failed writing image file")
         }
+
         return file.path
     }
 }

@@ -1,4 +1,5 @@
 import SwiftUI
+internal import Combine
 
 final class RootTabViewModel: ObservableObject {
     let container: AppContainer

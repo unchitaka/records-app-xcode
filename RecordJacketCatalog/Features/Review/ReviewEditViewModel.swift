@@ -1,7 +1,9 @@
 import Foundation
+internal import Combine
 
 @MainActor
 final class ReviewEditViewModel: ObservableObject {
+    
     @Published var session: ReviewSession
     @Published var isLookingUp = false
     @Published var lookupError: String?

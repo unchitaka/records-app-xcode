@@ -6,17 +6,49 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXFileReference section */
-		D6CDC1D92F931A6A00CE86DC /* Record Catalog.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Record Catalog.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-/* End PBXFileReference section */
+/* Begin PBXBuildFile section */
+		D6CDC20B2F931BB600CE86DC /* ReviewSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6CDC1FC2F931BB600CE86DC /* ReviewSession.swift */; };
+		D6CDC20C2F931BB600CE86DC /* ReviewEditViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6CDC1F82F931BB600CE86DC /* ReviewEditViewModel.swift */; };
+		D6CDC20D2F931BB600CE86DC /* SavedRecordsListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6CDC1F52F931BB600CE86DC /* SavedRecordsListViewModel.swift */; };
+		D6CDC20E2F931BB600CE86DC /* RecordModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6CDC1FB2F931BB600CE86DC /* RecordModels.swift */; };
+		D6CDC20F2F931BB600CE86DC /* CoreDataStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6CDC1FE2F931BB600CE86DC /* CoreDataStack.swift */; };
+		D6CDC2102F931BB600CE86DC /* RecordRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6CDC1FF2F931BB600CE86DC /* RecordRepository.swift */; };
+		D6CDC2112F931BB600CE86DC /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6CDC2082F931BB600CE86DC /* AppLogger.swift */; };
+		D6CDC2122F931BB600CE86DC /* CaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6CDC1F02F931BB600CE86DC /* CaptureView.swift */; };
+		D6CDC2132F931BB600CE86DC /* RecordJacketCatalogApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6CDC1EC2F931BB600CE86DC /* RecordJacketCatalogApp.swift */; };
+		D6CDC2142F931BB600CE86DC /* DiscogsLookupService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6CDC2032F931BB600CE86DC /* DiscogsLookupService.swift */; };
+		D6CDC2152F931BB600CE86DC /* CaptureViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6CDC1F12F931BB600CE86DC /* CaptureViewModel.swift */; };
+		D6CDC2162F931BB600CE86DC /* ReviewEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6CDC1F72F931BB600CE86DC /* ReviewEditView.swift */; };
+		D6CDC2172F931BB600CE86DC /* OCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6CDC2052F931BB600CE86DC /* OCRService.swift */; };
+		D6CDC2182F931BB600CE86DC /* SavedRecordsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6CDC1F42F931BB600CE86DC /* SavedRecordsListView.swift */; };
+		D6CDC2192F931BB600CE86DC /* RootTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6CDC1ED2F931BB600CE86DC /* RootTabView.swift */; };
+		D6CDC21A2F931BB600CE86DC /* CameraService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6CDC2012F931BB600CE86DC /* CameraService.swift */; };
+		D6CDC21B2F931BB600CE86DC /* CaptureFlowHostView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6CDC1EF2F931BB600CE86DC /* CaptureFlowHostView.swift */; };
+		D6CDC21C2F931BB600CE86DC /* RecordDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6CDC1F32F931BB600CE86DC /* RecordDetailView.swift */; };
+/* End PBXBuildFile section */
 
-/* Begin PBXFileSystemSynchronizedRootGroup section */
-		D6CDC1DB2F931A6A00CE86DC /* Record Catalog */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "Record Catalog";
-			sourceTree = "<group>";
-		};
-/* End PBXFileSystemSynchronizedRootGroup section */
+/* Begin PBXFileReference section */
+		D6C2C9742F933A8E00AEB227 /* RecordModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = RecordModel.xcdatamodel; sourceTree = "<group>"; };
+		D6CDC1EC2F931BB600CE86DC /* RecordJacketCatalogApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordJacketCatalogApp.swift; sourceTree = "<group>"; };
+		D6CDC1ED2F931BB600CE86DC /* RootTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootTabView.swift; sourceTree = "<group>"; };
+		D6CDC1EF2F931BB600CE86DC /* CaptureFlowHostView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureFlowHostView.swift; sourceTree = "<group>"; };
+		D6CDC1F02F931BB600CE86DC /* CaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureView.swift; sourceTree = "<group>"; };
+		D6CDC1F12F931BB600CE86DC /* CaptureViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureViewModel.swift; sourceTree = "<group>"; };
+		D6CDC1F32F931BB600CE86DC /* RecordDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordDetailView.swift; sourceTree = "<group>"; };
+		D6CDC1F42F931BB600CE86DC /* SavedRecordsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedRecordsListView.swift; sourceTree = "<group>"; };
+		D6CDC1F52F931BB600CE86DC /* SavedRecordsListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedRecordsListViewModel.swift; sourceTree = "<group>"; };
+		D6CDC1F72F931BB600CE86DC /* ReviewEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewEditView.swift; sourceTree = "<group>"; };
+		D6CDC1F82F931BB600CE86DC /* ReviewEditViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewEditViewModel.swift; sourceTree = "<group>"; };
+		D6CDC1FB2F931BB600CE86DC /* RecordModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordModels.swift; sourceTree = "<group>"; };
+		D6CDC1FC2F931BB600CE86DC /* ReviewSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewSession.swift; sourceTree = "<group>"; };
+		D6CDC1FE2F931BB600CE86DC /* CoreDataStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataStack.swift; sourceTree = "<group>"; };
+		D6CDC1FF2F931BB600CE86DC /* RecordRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordRepository.swift; sourceTree = "<group>"; };
+		D6CDC2012F931BB600CE86DC /* CameraService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraService.swift; sourceTree = "<group>"; };
+		D6CDC2032F931BB600CE86DC /* DiscogsLookupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscogsLookupService.swift; sourceTree = "<group>"; };
+		D6CDC2052F931BB600CE86DC /* OCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCRService.swift; sourceTree = "<group>"; };
+		D6CDC2082F931BB600CE86DC /* AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogger.swift; sourceTree = "<group>"; };
+		D6F2EAA22F93259E00C09264 /* Record Catalog.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Record Catalog.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		D6CDC1D62F931A6A00CE86DC /* Frameworks */ = {
@@ -32,17 +64,131 @@
 		D6CDC1D02F931A6A00CE86DC = {
 			isa = PBXGroup;
 			children = (
-				D6CDC1DB2F931A6A00CE86DC /* Record Catalog */,
-				D6CDC1DA2F931A6A00CE86DC /* Products */,
+				D6C2C9732F933A8E00AEB227 /* RecordModel.xcdatamodeld */,
+				D6CDC20A2F931BB600CE86DC /* RecordJacketCatalog */,
+				D6F2EAA22F93259E00C09264 /* Record Catalog.app */,
 			);
 			sourceTree = "<group>";
 		};
-		D6CDC1DA2F931A6A00CE86DC /* Products */ = {
+		D6CDC1EE2F931BB600CE86DC /* App */ = {
 			isa = PBXGroup;
 			children = (
-				D6CDC1D92F931A6A00CE86DC /* Record Catalog.app */,
+				D6CDC1EC2F931BB600CE86DC /* RecordJacketCatalogApp.swift */,
+				D6CDC1ED2F931BB600CE86DC /* RootTabView.swift */,
 			);
-			name = Products;
+			path = App;
+			sourceTree = "<group>";
+		};
+		D6CDC1F22F931BB600CE86DC /* Capture */ = {
+			isa = PBXGroup;
+			children = (
+				D6CDC1EF2F931BB600CE86DC /* CaptureFlowHostView.swift */,
+				D6CDC1F02F931BB600CE86DC /* CaptureView.swift */,
+				D6CDC1F12F931BB600CE86DC /* CaptureViewModel.swift */,
+			);
+			path = Capture;
+			sourceTree = "<group>";
+		};
+		D6CDC1F62F931BB600CE86DC /* Records */ = {
+			isa = PBXGroup;
+			children = (
+				D6CDC1F32F931BB600CE86DC /* RecordDetailView.swift */,
+				D6CDC1F42F931BB600CE86DC /* SavedRecordsListView.swift */,
+				D6CDC1F52F931BB600CE86DC /* SavedRecordsListViewModel.swift */,
+			);
+			path = Records;
+			sourceTree = "<group>";
+		};
+		D6CDC1F92F931BB600CE86DC /* Review */ = {
+			isa = PBXGroup;
+			children = (
+				D6CDC1F72F931BB600CE86DC /* ReviewEditView.swift */,
+				D6CDC1F82F931BB600CE86DC /* ReviewEditViewModel.swift */,
+			);
+			path = Review;
+			sourceTree = "<group>";
+		};
+		D6CDC1FA2F931BB600CE86DC /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				D6CDC1F22F931BB600CE86DC /* Capture */,
+				D6CDC1F62F931BB600CE86DC /* Records */,
+				D6CDC1F92F931BB600CE86DC /* Review */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		D6CDC1FD2F931BB600CE86DC /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				D6CDC1FB2F931BB600CE86DC /* RecordModels.swift */,
+				D6CDC1FC2F931BB600CE86DC /* ReviewSession.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		D6CDC2002F931BB600CE86DC /* Persistence */ = {
+			isa = PBXGroup;
+			children = (
+				D6CDC1FE2F931BB600CE86DC /* CoreDataStack.swift */,
+				D6CDC1FF2F931BB600CE86DC /* RecordRepository.swift */,
+			);
+			path = Persistence;
+			sourceTree = "<group>";
+		};
+		D6CDC2022F931BB600CE86DC /* Camera */ = {
+			isa = PBXGroup;
+			children = (
+				D6CDC2012F931BB600CE86DC /* CameraService.swift */,
+			);
+			path = Camera;
+			sourceTree = "<group>";
+		};
+		D6CDC2042F931BB600CE86DC /* Lookup */ = {
+			isa = PBXGroup;
+			children = (
+				D6CDC2032F931BB600CE86DC /* DiscogsLookupService.swift */,
+			);
+			path = Lookup;
+			sourceTree = "<group>";
+		};
+		D6CDC2062F931BB600CE86DC /* OCR */ = {
+			isa = PBXGroup;
+			children = (
+				D6CDC2052F931BB600CE86DC /* OCRService.swift */,
+			);
+			path = OCR;
+			sourceTree = "<group>";
+		};
+		D6CDC2072F931BB600CE86DC /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				D6CDC2022F931BB600CE86DC /* Camera */,
+				D6CDC2042F931BB600CE86DC /* Lookup */,
+				D6CDC2062F931BB600CE86DC /* OCR */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		D6CDC2092F931BB600CE86DC /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				D6CDC2082F931BB600CE86DC /* AppLogger.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+		D6CDC20A2F931BB600CE86DC /* RecordJacketCatalog */ = {
+			isa = PBXGroup;
+			children = (
+				D6CDC1EE2F931BB600CE86DC /* App */,
+				D6CDC1FA2F931BB600CE86DC /* Features */,
+				D6CDC1FD2F931BB600CE86DC /* Models */,
+				D6CDC2002F931BB600CE86DC /* Persistence */,
+				D6CDC2072F931BB600CE86DC /* Services */,
+				D6CDC2092F931BB600CE86DC /* Utilities */,
+			);
+			path = RecordJacketCatalog;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -60,14 +206,11 @@
 			);
 			dependencies = (
 			);
-			fileSystemSynchronizedGroups = (
-				D6CDC1DB2F931A6A00CE86DC /* Record Catalog */,
-			);
 			name = "Record Catalog";
 			packageProductDependencies = (
 			);
 			productName = "Record Catalog";
-			productReference = D6CDC1D92F931A6A00CE86DC /* Record Catalog.app */;
+			productReference = D6F2EAA22F93259E00C09264 /* Record Catalog.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -95,7 +238,7 @@
 			mainGroup = D6CDC1D02F931A6A00CE86DC;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
-			productRefGroup = D6CDC1DA2F931A6A00CE86DC /* Products */;
+			productRefGroup = D6CDC1D02F931A6A00CE86DC;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -119,6 +262,24 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D6CDC20B2F931BB600CE86DC /* ReviewSession.swift in Sources */,
+				D6CDC20C2F931BB600CE86DC /* ReviewEditViewModel.swift in Sources */,
+				D6CDC20D2F931BB600CE86DC /* SavedRecordsListViewModel.swift in Sources */,
+				D6CDC20E2F931BB600CE86DC /* RecordModels.swift in Sources */,
+				D6CDC20F2F931BB600CE86DC /* CoreDataStack.swift in Sources */,
+				D6CDC2102F931BB600CE86DC /* RecordRepository.swift in Sources */,
+				D6CDC2112F931BB600CE86DC /* AppLogger.swift in Sources */,
+				D6CDC2122F931BB600CE86DC /* CaptureView.swift in Sources */,
+				D6CDC2132F931BB600CE86DC /* RecordJacketCatalogApp.swift in Sources */,
+				D6CDC2142F931BB600CE86DC /* DiscogsLookupService.swift in Sources */,
+				D6CDC2152F931BB600CE86DC /* CaptureViewModel.swift in Sources */,
+				D6CDC2162F931BB600CE86DC /* ReviewEditView.swift in Sources */,
+				D6CDC2172F931BB600CE86DC /* OCRService.swift in Sources */,
+				D6CDC2182F931BB600CE86DC /* SavedRecordsListView.swift in Sources */,
+				D6CDC2192F931BB600CE86DC /* RootTabView.swift in Sources */,
+				D6CDC21A2F931BB600CE86DC /* CameraService.swift in Sources */,
+				D6CDC21B2F931BB600CE86DC /* CaptureFlowHostView.swift in Sources */,
+				D6CDC21C2F931BB600CE86DC /* RecordDetailView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -256,6 +417,7 @@
 				DEVELOPMENT_TEAM = F4ZZZ26YAR;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Camera is required to scan record jackets";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -288,6 +450,7 @@
 				DEVELOPMENT_TEAM = F4ZZZ26YAR;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Camera is required to scan record jackets";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -332,6 +495,19 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCVersionGroup section */
+		D6C2C9732F933A8E00AEB227 /* RecordModel.xcdatamodeld */ = {
+			isa = XCVersionGroup;
+			children = (
+				D6C2C9742F933A8E00AEB227 /* RecordModel.xcdatamodel */,
+			);
+			currentVersion = D6C2C9742F933A8E00AEB227 /* RecordModel.xcdatamodel */;
+			path = RecordModel.xcdatamodeld;
+			sourceTree = "<group>";
+			versionGroupType = wrapper.xcdatamodel;
+		};
+/* End XCVersionGroup section */
 	};
 	rootObject = D6CDC1D12F931A6A00CE86DC /* Project object */;
 }
