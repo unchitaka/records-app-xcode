@@ -3,6 +3,7 @@ import Foundation
 
 protocol CameraService {
     var isSessionRunning: Bool { get }
+    var previewSession: AVCaptureSession? { get }
     func startSession()
     func stopSession()
     func capturePhoto(completion: @escaping (Result<Data, Error>) -> Void)
@@ -20,15 +21,18 @@ final class AVCameraService: NSObject, CameraService {
     init(logger: AppLogger) {
         self.logger = logger
         super.init()
-        configureSession()
+
+        sessionQueue.sync {
+            self.configureSession()
+        }
     }
 
     var isSessionRunning: Bool { session.isRunning }
+    var previewSession: AVCaptureSession? { isConfigured ? session : nil }
 
     func startSession() {
-        guard isConfigured else { return }
         sessionQueue.async {
-            guard !self.session.isRunning else { return }
+            guard self.isConfigured, !self.session.isRunning else { return }
             self.session.startRunning()
         }
     }
@@ -41,25 +45,29 @@ final class AVCameraService: NSObject, CameraService {
     }
 
     func capturePhoto(completion: @escaping (Result<Data, Error>) -> Void) {
-        guard isConfigured else {
-            completion(.failure(CameraError.notConfigured))
-            return
+        sessionQueue.async {
+            guard self.isConfigured else {
+                completion(.failure(CameraError.notConfigured))
+                return
+            }
+
+            guard self.pendingCompletion == nil else {
+                completion(.failure(CameraError.captureInProgress))
+                return
+            }
+
+            self.pendingCompletion = completion
+
+            let settings = AVCapturePhotoSettings()
+            self.output.capturePhoto(with: settings, delegate: self)
         }
-
-        guard pendingCompletion == nil else {
-            completion(.failure(CameraError.captureInProgress))
-            return
-        }
-
-        pendingCompletion = completion
-
-        let settings = AVCapturePhotoSettings()
-        output.capturePhoto(with: settings, delegate: self)
     }
 
     private func configureSession() {
         session.beginConfiguration()
         defer { session.commitConfiguration() }
+
+        session.sessionPreset = .photo
 
         guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
             logger.error("No back camera available")
@@ -81,8 +89,7 @@ final class AVCameraService: NSObject, CameraService {
 
             session.addInput(input)
             session.addOutput(output)
-            session.sessionPreset = .photo
-
+            output.isHighResolutionCaptureEnabled = true
             isConfigured = true
 
         } catch {

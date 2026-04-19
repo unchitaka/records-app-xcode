@@ -1,3 +1,4 @@
+import AVFoundation
 import Foundation
 internal import Combine
 
@@ -7,9 +8,14 @@ final class CaptureViewModel: ObservableObject {
     @Published var isBusy = false
     @Published var errorMessage: String?
 
-    private let camera: CameraService
+    let camera: CameraService
     private let ocr: OCRService
     private let logger: AppLogger
+
+
+    var previewSession: AVCaptureSession? {
+        camera.previewSession
+    }
 
     init(camera: CameraService, ocr: OCRService, logger: AppLogger) {
         self.camera = camera
