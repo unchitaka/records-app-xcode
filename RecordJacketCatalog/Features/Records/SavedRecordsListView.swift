@@ -12,7 +12,8 @@ struct SavedRecordsListView: View {
                             viewModel: .init(
                                 session: ReviewSession(record: item),
                                 repository: viewModel.repository,
-                                discogs: LiveDiscogsLookupService(logger: AppLogger(category: "RetryLookup"))
+                                discogs: LiveDiscogsLookupService(logger: AppLogger(category: "RetryLookup")),
+                                coverMatcher: StubCoverImageMatchService(logger: AppLogger(category: "RetryLookupCover"))
                             ),
                             onSaved: {
                                 viewModel.load()

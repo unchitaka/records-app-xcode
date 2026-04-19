@@ -3,7 +3,7 @@ internal import Combine
 
 @MainActor
 final class ReviewEditViewModel: ObservableObject {
-    
+
     @Published var session: ReviewSession
     @Published var isLookingUp = false
     @Published var lookupError: String?
@@ -12,11 +12,18 @@ final class ReviewEditViewModel: ObservableObject {
 
     private let repository: RecordRepository
     private let discogs: DiscogsLookupService
+    private let coverMatcher: CoverImageMatchService
 
-    init(session: ReviewSession, repository: RecordRepository, discogs: DiscogsLookupService) {
+    init(
+        session: ReviewSession,
+        repository: RecordRepository,
+        discogs: DiscogsLookupService,
+        coverMatcher: CoverImageMatchService
+    ) {
         self.session = session
         self.repository = repository
         self.discogs = discogs
+        self.coverMatcher = coverMatcher
     }
 
     enum EditStage: String, CaseIterable {
@@ -34,12 +41,34 @@ final class ReviewEditViewModel: ObservableObject {
         session.lookupHistory.append(LookupQueryLog(query: query))
 
         do {
-            session.candidates = try await discogs.search(fields: session.fields)
+            let candidates = try await discogs.search(fields: session.fields)
+            session.candidates = candidates
+
+            if candidates.isEmpty {
+                lookupError = "No Discogs matches found. Edit fields (especially catalog #) and retry."
+                await tryCoverMatcherFallbackIfAvailable()
+            }
+        } catch let error as DiscogsLookupError {
+            lookupError = error.errorDescription
         } catch {
-            lookupError = "Discogs lookup failed. Check token/network and retry."
+            lookupError = "Unexpected lookup error. Please retry."
         }
 
         isLookingUp = false
+    }
+
+    private func tryCoverMatcherFallbackIfAvailable() async {
+        guard
+            let correctedCropPath = session.correctedCropPath,
+            let imageData = try? Data(contentsOf: URL(fileURLWithPath: correctedCropPath))
+        else {
+            return
+        }
+
+        if let candidate = await coverMatcher.findCandidate(using: imageData, fields: session.fields) {
+            session.candidates = [candidate]
+            lookupError = nil
+        }
     }
 
     func selectCandidate(_ candidate: DiscogsCandidate?) {
@@ -51,6 +80,7 @@ final class ReviewEditViewModel: ObservableObject {
         let selected = session.candidates.first(where: { $0.id == session.selectedCandidateID })
         let item = RecordItem(
             imagePath: session.imagePath,
+            correctedCropPath: session.correctedCropPath,
             rawOCRText: session.rawOCRText,
             editableFields: session.fields,
             queryHistory: session.lookupHistory,
