@@ -5,7 +5,23 @@ protocol DiscogsLookupService {
 }
 
 enum DiscogsConfig {
-    static var token: String = "SET_ME"
+    private static let placeholder = "SET_ME"
+
+    static var token: String {
+        if let value = ProcessInfo.processInfo.environment["DISCOGS_TOKEN"], !value.isEmpty {
+            return value
+        }
+
+        if let value = Bundle.main.object(forInfoDictionaryKey: "DISCOGS_TOKEN") as? String, !value.isEmpty {
+            return value
+        }
+
+        return placeholder
+    }
+
+    static var isConfigured: Bool {
+        token != placeholder
+    }
 }
 
 final class LiveDiscogsLookupService: DiscogsLookupService {
@@ -21,6 +37,10 @@ final class LiveDiscogsLookupService: DiscogsLookupService {
             .joined(separator: " ")
 
         guard !query.isEmpty else { return [] }
+        guard DiscogsConfig.isConfigured else {
+            logger.error("Discogs token is not configured")
+            throw DiscogsLookupError.missingToken
+        }
 
         var components = URLComponents(string: "https://api.discogs.com/database/search")!
         components.queryItems = [
@@ -45,6 +65,17 @@ final class LiveDiscogsLookupService: DiscogsLookupService {
                 format: $0.format?.joined(separator: ", "),
                 resourceURL: $0.resourceURL
             )
+        }
+    }
+}
+
+enum DiscogsLookupError: LocalizedError {
+    case missingToken
+
+    var errorDescription: String? {
+        switch self {
+        case .missingToken:
+            return "Discogs token missing. Configure DISCOGS_TOKEN in the app environment or Info.plist."
         }
     }
 }

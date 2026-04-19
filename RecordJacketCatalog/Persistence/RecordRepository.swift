@@ -50,9 +50,10 @@ final class CoreDataRecordRepository: RecordRepository {
         let context = stack.container.viewContext
         let request = NSFetchRequest<NSManagedObject>(entityName: "StoredRecord")
 
-        if unresolvedOnly {
-            request.predicate = NSPredicate(format: "unresolved == YES")
-        }
+        request.predicate = NSPredicate(
+            format: "unresolved == %@",
+            NSNumber(value: unresolvedOnly)
+        )
 
         request.sortDescriptors = [NSSortDescriptor(key: "updatedAt", ascending: false)]
 

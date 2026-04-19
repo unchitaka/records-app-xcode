@@ -6,9 +6,12 @@ struct CaptureView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.black.opacity(0.85))
-                .overlay(Text("Camera Preview").foregroundStyle(.white))
+            CameraPreviewView(session: viewModel.previewSession)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(.white.opacity(0.15), lineWidth: 1)
+                )
                 .aspectRatio(3 / 4, contentMode: .fit)
                 .padding(.top, 12)
 

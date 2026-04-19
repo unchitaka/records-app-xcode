@@ -9,7 +9,7 @@
         <attribute name="latestCandidates" attributeType="Binary"/>
         <attribute name="queryHistory" attributeType="Binary"/>
         <attribute name="rawOCRText" attributeType="String"/>
-        <attribute name="selectedMatch" optional="YES" attributeType="String"/>
+        <attribute name="selectedMatch" optional="YES" attributeType="Binary"/>
         <attribute name="tags" attributeType="Binary"/>
         <attribute name="unresolved" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="updatedAt" attributeType="Date" usesScalarValueType="NO"/>
