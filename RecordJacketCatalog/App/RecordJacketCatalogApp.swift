@@ -16,6 +16,7 @@ struct AppContainer {
     let cameraService: CameraService
     let ocrService: OCRService
     let discogsService: DiscogsLookupService
+    let coverImageMatcher: CoverImageMatchService
     let logger: AppLogger
 
     static let live: AppContainer = {
@@ -25,6 +26,7 @@ struct AppContainer {
             cameraService: AVCameraService(logger: logger),
             ocrService: VisionOCRService(logger: logger),
             discogsService: LiveDiscogsLookupService(logger: logger),
+            coverImageMatcher: StubCoverImageMatchService(logger: logger),
             logger: logger
         )
     }()

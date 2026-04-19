@@ -13,7 +13,8 @@ struct CaptureFlowHostView: View {
                         viewModel: .init(
                             session: session,
                             repository: container.repository,
-                            discogs: container.discogsService
+                            discogs: container.discogsService,
+                            coverMatcher: container.coverImageMatcher
                         )
                     ) {
                         self.session = nil

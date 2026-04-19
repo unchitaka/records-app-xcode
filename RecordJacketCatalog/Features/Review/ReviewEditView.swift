@@ -13,6 +13,14 @@ struct ReviewEditView: View {
                     .foregroundStyle(.orange)
             }
 
+            Section("OCR Input") {
+                Text(viewModel.session.ocrInputSource == .correctedCrop
+                     ? "OCR used corrected jacket crop"
+                     : "OCR used original image fallback")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            }
+
             Picker("Stage", selection: $viewModel.stage) {
                 ForEach(ReviewEditViewModel.EditStage.allCases, id: \.self) {
                     Text($0.rawValue).tag($0)
