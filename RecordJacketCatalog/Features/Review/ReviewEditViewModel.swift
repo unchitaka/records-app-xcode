@@ -34,6 +34,12 @@ final class ReviewEditViewModel: ObservableObject {
         case lookup = "Lookup"
     }
 
+    enum OCRSelectionState {
+        case selectedInCurrentMode
+        case selectedInOtherMode
+        case unselected
+    }
+
     func runLookup() async {
         isLookingUp = true
         lookupError = nil
@@ -149,6 +155,16 @@ final class ReviewEditViewModel: ObservableObject {
         case .catalog:
             return session.selectedCatalogBoxIDs.contains(id)
         }
+    }
+
+    func selectionState(for id: UUID) -> OCRSelectionState {
+        if isBoxSelectedInActiveMode(id) {
+            return .selectedInCurrentMode
+        }
+        if isBoxSelected(id) {
+            return .selectedInOtherMode
+        }
+        return .unselected
     }
 
     func save() {
