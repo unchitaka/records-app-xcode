@@ -12,6 +12,13 @@ struct RecordDetailView: View {
                 row("Unresolved", record.unresolved ? "Yes" : "No")
             }
 
+            Section("OCR Selection") {
+                row("Boxes", "\(record.ocrBoxes.count)")
+                row("Title boxes", "\(record.selectedTitleBoxIDs.count)")
+                row("Artist boxes", "\(record.selectedArtistBoxIDs.count)")
+                row("Catalog boxes", "\(record.selectedCatalogBoxIDs.count)")
+            }
+
             Section("Tags") {
                 Text(record.tags.joined(separator: ", "))
             }
@@ -21,11 +28,25 @@ struct RecordDetailView: View {
                     .font(.caption)
             }
 
-            if let match = record.selectedDiscogsMatch {
-                Section("Selected Discogs") {
-                    Text(match.title)
-                    Text(match.resourceURL ?? "")
+            if let summary = record.confirmedDiscogsSummary {
+                Section("Confirmed Discogs") {
+                    Text(summary.title)
+                    Text(summary.resourceURL ?? "")
                         .font(.caption)
+                }
+            }
+
+            if let release = record.confirmedDiscogsRelease {
+                Section("Confirmed Release Details") {
+                    row("Year", release.year.map(String.init) ?? "")
+                    row("Country", release.country ?? "")
+                    row("Formats", release.formats.map(\.name).joined(separator: ", "))
+                    row("Labels", release.labels.map(\.name).joined(separator: ", "))
+                    row("Catalog #", release.catalogNumbers.joined(separator: ", "))
+                    row("Artists", release.artists.map(\.name).joined(separator: ", "))
+                    row("Genres", release.genres.joined(separator: ", "))
+                    row("Styles", release.styles.joined(separator: ", "))
+                    row("Status", release.status ?? "")
                 }
             }
 

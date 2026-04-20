@@ -65,11 +65,18 @@ final class CaptureViewModel: ObservableObject {
                         correctedCropPath: correctedPath,
                         ocrInputSource: ocrSource,
                         rawOCRText: ocrResult.rawText,
+                        ocrBoxes: ocrResult.boxes,
+                        selectedTitleBoxIDs: [],
+                        selectedArtistBoxIDs: [],
+                        selectedCatalogBoxIDs: [],
                         fields: ocrResult.extractedFields,
                         glareWarning: ocrResult.glareDetected,
                         lookupHistory: [],
                         candidates: [],
                         selectedCandidateID: nil,
+                        selectedDiscogsMatch: nil,
+                        confirmedDiscogsSummary: nil,
+                        confirmedDiscogsRelease: nil,
                         unresolved: false,
                         tags: []
                     )
