@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct ReviewEditView: View {
     @StateObject var viewModel: ReviewEditViewModel
@@ -28,11 +29,29 @@ struct ReviewEditView: View {
             }
             .pickerStyle(.segmented)
 
+            Section("OCR Selection") {
+                OCRSelectionImageView(
+                    imagePath: viewModel.session.correctedCropPath ?? viewModel.session.imagePath,
+                    boxes: viewModel.session.ocrBoxes,
+                    isBoxSelected: { box in viewModel.isBoxSelected(box.id) },
+                    isBoxSelectedInMode: { box in viewModel.isBoxSelectedInActiveMode(box.id) },
+                    onTapBox: { box in viewModel.toggleSelection(for: box) }
+                )
+                .frame(height: 280)
+
+                Picker("Selection Mode", selection: $viewModel.selectionMode) {
+                    ForEach(OCRSelectionMode.allCases, id: \.self) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+            }
+
             if viewModel.stage == .basic || viewModel.stage == .advanced || viewModel.stage == .lookup {
                 Section("Basic fields") {
-                    TextField("Title", text: $viewModel.session.fields.title)
-                    TextField("Artist", text: $viewModel.session.fields.artist)
-                    TextField("Catalog #", text: $viewModel.session.fields.catalogNumber)
+                    editableRow(title: "Title", text: $viewModel.session.fields.title, clearMode: .title)
+                    editableRow(title: "Artist", text: $viewModel.session.fields.artist, clearMode: .artist)
+                    editableRow(title: "Catalog #", text: $viewModel.session.fields.catalogNumber, clearMode: .catalog)
                 }
             }
 
@@ -41,11 +60,17 @@ struct ReviewEditView: View {
                     TextField("Label", text: $viewModel.session.fields.label)
                     TextField("Year", text: $viewModel.session.fields.year)
                 }
+
+                Section("OCR Raw Text") {
+                    Text(viewModel.session.rawOCRText)
+                        .font(.caption)
+                        .textSelection(.enabled)
+                }
             }
 
             if viewModel.stage == .lookup {
                 Section("Discogs") {
-                    Button(viewModel.isLookingUp ? "Looking up..." : "Re-run Discogs Lookup") {
+                    Button(viewModel.isLookingUp ? "Looking up..." : "Search Discogs Candidates") {
                         Task { await viewModel.runLookup() }
                     }
                     .disabled(viewModel.isLookingUp)
@@ -55,24 +80,53 @@ struct ReviewEditView: View {
                     }
 
                     ForEach(viewModel.session.candidates) { candidate in
-                        Button {
-                            viewModel.selectCandidate(candidate)
-                        } label: {
-                            VStack(alignment: .leading) {
-                                Text(candidate.title).font(.headline)
-                                Text([candidate.year, candidate.country, candidate.format]
-                                    .compactMap { $0 }
-                                    .joined(separator: " · "))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(candidate.title).font(.headline)
+                            Text([candidate.year, candidate.country, candidate.format]
+                                .compactMap { $0 }
+                                .joined(separator: " · "))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                            Button(
+                                viewModel.isConfirmingCandidate && viewModel.session.selectedCandidateID == candidate.id
+                                ? "Confirming..."
+                                : "Confirm Match"
+                            ) {
+                                Task { await viewModel.confirmCandidate(candidate) }
                             }
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .buttonStyle(.borderedProminent)
+                            .disabled(viewModel.isConfirmingCandidate)
                         }
-                        .buttonStyle(.bordered)
                     }
 
                     Button("Save as unresolved") {
-                        viewModel.selectCandidate(nil)
+                        viewModel.markUnresolved()
+                    }
+                }
+
+                if let summary = viewModel.session.confirmedDiscogsSummary {
+                    Section("Confirmed Discogs Candidate") {
+                        Text(summary.title)
+                        Text([summary.year, summary.country, summary.format].compactMap { $0 }.joined(separator: " · "))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                if let release = viewModel.session.confirmedDiscogsRelease {
+                    Section("Confirmed Discogs Release") {
+                        detailRow("Title", release.title)
+                        detailRow("Year", release.year.map(String.init) ?? "")
+                        detailRow("Country", release.country ?? "")
+                        detailRow("Artists", release.artists.map(\.name).joined(separator: ", "))
+                        detailRow("Labels", release.labels.map(\.name).joined(separator: ", "))
+                        detailRow("Catalog #", release.catalogNumbers.joined(separator: ", "))
+                        detailRow("Formats", release.formats.map(\.name).joined(separator: ", "))
+                        detailRow("Genres", release.genres.joined(separator: ", "))
+                        detailRow("Styles", release.styles.joined(separator: ", "))
+                        detailRow("Status", release.status ?? "")
+                        detailRow("URI", release.uri ?? "")
                     }
                 }
             }
@@ -105,5 +159,95 @@ struct ReviewEditView: View {
             }
         }
         .navigationTitle("Review & Edit")
+    }
+
+    @ViewBuilder
+    private func editableRow(title: String, text: Binding<String>, clearMode: OCRSelectionMode) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            TextField(title, text: text)
+            Button("Clear OCR selection") {
+                viewModel.clearSelection(for: clearMode)
+            }
+            .font(.caption)
+        }
+    }
+
+    @ViewBuilder
+    private func detailRow(_ key: String, _ value: String) -> some View {
+        if !value.isEmpty {
+            HStack(alignment: .top) {
+                Text(key)
+                Spacer()
+                Text(value)
+                    .multilineTextAlignment(.trailing)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+private struct OCRSelectionImageView: View {
+    let imagePath: String
+    let boxes: [OCRTextBox]
+    let isBoxSelected: (OCRTextBox) -> Bool
+    let isBoxSelectedInMode: (OCRTextBox) -> Bool
+    let onTapBox: (OCRTextBox) -> Void
+
+    var body: some View {
+        GeometryReader { proxy in
+            if let uiImage = UIImage(contentsOfFile: imagePath) {
+                let imageSize = uiImage.size
+                let containerSize = proxy.size
+                let fitted = fittedRect(imageSize: imageSize, containerSize: containerSize)
+
+                ZStack(alignment: .topLeading) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: containerSize.width, height: containerSize.height)
+
+                    ForEach(boxes) { box in
+                        let rect = convertRect(box.normalizedRect.cgRect, imageFrame: fitted)
+                        Rectangle()
+                            .strokeBorder(isBoxSelectedInMode(box) ? .green : (isBoxSelected(box) ? .blue : .yellow), lineWidth: 2)
+                            .background(
+                                Rectangle().fill((isBoxSelectedInMode(box) ? Color.green : Color.yellow).opacity(0.14))
+                            )
+                            .frame(width: rect.width, height: rect.height)
+                            .position(x: rect.midX, y: rect.midY)
+                            .contentShape(Rectangle())
+                            .onTapGesture { onTapBox(box) }
+                    }
+                }
+            } else {
+                Text("Image preview unavailable")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .clipped()
+    }
+
+    private func fittedRect(imageSize: CGSize, containerSize: CGSize) -> CGRect {
+        guard imageSize.width > 0, imageSize.height > 0 else { return .zero }
+        let imageAspect = imageSize.width / imageSize.height
+        let containerAspect = containerSize.width / containerSize.height
+
+        if imageAspect > containerAspect {
+            let width = containerSize.width
+            let height = width / imageAspect
+            return CGRect(x: 0, y: (containerSize.height - height) / 2, width: width, height: height)
+        } else {
+            let height = containerSize.height
+            let width = height * imageAspect
+            return CGRect(x: (containerSize.width - width) / 2, y: 0, width: width, height: height)
+        }
+    }
+
+    private func convertRect(_ normalized: CGRect, imageFrame: CGRect) -> CGRect {
+        let x = imageFrame.minX + normalized.minX * imageFrame.width
+        let y = imageFrame.minY + (1 - normalized.maxY) * imageFrame.height
+        let width = normalized.width * imageFrame.width
+        let height = normalized.height * imageFrame.height
+        return CGRect(x: x, y: y, width: width, height: height)
     }
 }

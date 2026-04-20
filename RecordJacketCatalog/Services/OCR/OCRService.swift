@@ -4,6 +4,7 @@ import Vision
 
 struct OCRResult {
     let rawText: String
+    let boxes: [OCRTextBox]
     let extractedFields: EditableFields
     let glareDetected: Bool
 }
@@ -20,23 +21,43 @@ final class VisionOCRService: OCRService {
     }
 
     func processImageData(_ data: Data) async -> OCRResult {
-        let rawText = await recognizeText(data) ?? ""
-        let fields = extractFields(rawText)
+        let boxes = await recognizeTextBoxes(data)
+        let rawText = boxes.map(\.text).joined(separator: "\n")
+        let fields = extractFields(from: boxes, fallbackRawText: rawText)
         let glare = detectGlare(data)
-        logger.info("OCR complete. glareDetected=\(glare)")
-        return OCRResult(rawText: rawText, extractedFields: fields, glareDetected: glare)
+        logger.info("OCR complete. boxes=\(boxes.count), glareDetected=\(glare)")
+        return OCRResult(rawText: rawText, boxes: boxes, extractedFields: fields, glareDetected: glare)
     }
 
-    private func recognizeText(_ data: Data) async -> String? {
+    private func recognizeTextBoxes(_ data: Data) async -> [OCRTextBox] {
         guard let image = CGImageSourceCreateWithData(data as CFData, nil).flatMap({ CGImageSourceCreateImageAtIndex($0, 0, nil) }) else {
-            return nil
+            return []
         }
 
         return await withCheckedContinuation { continuation in
             let request = VNRecognizeTextRequest { request, _ in
                 let observations = request.results as? [VNRecognizedTextObservation] ?? []
-                let lines = observations.compactMap { $0.topCandidates(1).first?.string }
-                continuation.resume(returning: lines.joined(separator: "\n"))
+                let boxes: [OCRTextBox] = observations.compactMap { observation in
+                    guard let candidate = observation.topCandidates(1).first else {
+                        return nil
+                    }
+
+                    let trimmed = candidate.string.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !trimmed.isEmpty else { return nil }
+
+                    return OCRTextBox(
+                        text: trimmed,
+                        confidence: candidate.confidence,
+                        normalizedRect: OCRNormalizedRect(
+                            x: observation.boundingBox.origin.x,
+                            y: observation.boundingBox.origin.y,
+                            width: observation.boundingBox.width,
+                            height: observation.boundingBox.height
+                        )
+                    )
+                }
+
+                continuation.resume(returning: boxes.sorted(by: Self.readingOrder))
             }
             request.recognitionLevel = .accurate
             request.recognitionLanguages = ["ja-JP", "en-US"]
@@ -47,11 +68,9 @@ final class VisionOCRService: OCRService {
         }
     }
 
-    private func extractFields(_ text: String) -> EditableFields {
-        let lines = text
-            .split(separator: "\n")
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
+    private func extractFields(from boxes: [OCRTextBox], fallbackRawText: String) -> EditableFields {
+        let text = fallbackRawText
+        let lines = boxes.map(\.text)
 
         let catalogPatterns = [
             #"\b([A-Z]{1,6}[\-\s]?[A-Z0-9]{1,8}[\-\s]?[0-9]{1,6})\b"#,
@@ -76,29 +95,10 @@ final class VisionOCRService: OCRService {
         }
 
         let title = nonCatalogLines.first ?? lines.first ?? ""
-        let artist = inferArtistLine(
-            from: Array(nonCatalogLines.dropFirst()),
-            fallback: Array(lines.dropFirst())
-        )
+        let artist = nonCatalogLines.dropFirst().first ?? lines.dropFirst().first ?? ""
         let year = detectYear(in: text)
 
         return EditableFields(title: title, artist: artist, catalogNumber: catalog, label: "", year: year)
-    }
-
-    private func inferArtistLine(from primary: [String], fallback: [String]) -> String {
-        let likelyArtist = primary.first {
-            let lowered = $0.lowercased()
-            return lowered.contains(" - ")
-                || lowered.contains("feat")
-                || lowered.contains("featuring")
-                || lowered.contains("&")
-        }
-
-        if let likelyArtist {
-            return likelyArtist
-        }
-
-        return primary.first ?? fallback.first ?? ""
     }
 
     private func detectYear(in text: String) -> String {
@@ -113,5 +113,14 @@ final class VisionOCRService: OCRService {
 
     private func detectGlare(_ data: Data) -> Bool {
         data.prefix(128).filter { $0 > 245 }.count > 48
+    }
+
+    private static func readingOrder(lhs: OCRTextBox, rhs: OCRTextBox) -> Bool {
+        let leftY = lhs.normalizedRect.y
+        let rightY = rhs.normalizedRect.y
+        if abs(leftY - rightY) > 0.02 {
+            return leftY > rightY
+        }
+        return lhs.normalizedRect.x < rhs.normalizedRect.x
     }
 }

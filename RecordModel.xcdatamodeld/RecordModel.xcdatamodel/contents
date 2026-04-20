@@ -1,15 +1,21 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="24837" systemVersion="25D2128" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
     <entity name="StoredRecord" representedClassName="StoredRecord" syncable="YES" codeGenerationType="class">
+        <attribute name="confirmedDiscogsRelease" optional="YES" attributeType="Binary"/>
+        <attribute name="confirmedDiscogsSummary" optional="YES" attributeType="Binary"/>
         <attribute name="correctedCropPath" optional="YES" attributeType="String"/>
         <attribute name="createdAt" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="editableFields" attributeType="Binary"/>
         <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="imagePath" attributeType="String"/>
         <attribute name="latestCandidates" attributeType="Binary"/>
+        <attribute name="ocrBoxes" attributeType="Binary"/>
         <attribute name="queryHistory" attributeType="Binary"/>
         <attribute name="rawOCRText" attributeType="String"/>
+        <attribute name="selectedArtistBoxIDs" attributeType="Binary"/>
+        <attribute name="selectedCatalogBoxIDs" attributeType="Binary"/>
         <attribute name="selectedMatch" optional="YES" attributeType="Binary"/>
+        <attribute name="selectedTitleBoxIDs" attributeType="Binary"/>
         <attribute name="tags" attributeType="Binary"/>
         <attribute name="unresolved" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="updatedAt" attributeType="Date" usesScalarValueType="NO"/>

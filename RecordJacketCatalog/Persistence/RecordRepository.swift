@@ -36,10 +36,16 @@ final class CoreDataRecordRepository: RecordRepository {
         entity.setValue(item.imagePath, forKey: "imagePath")
         entity.setValue(item.correctedCropPath, forKey: "correctedCropPath")
         entity.setValue(item.rawOCRText, forKey: "rawOCRText")
+        entity.setValue(try encode(item.ocrBoxes), forKey: "ocrBoxes")
+        entity.setValue(try encode(item.selectedTitleBoxIDs), forKey: "selectedTitleBoxIDs")
+        entity.setValue(try encode(item.selectedArtistBoxIDs), forKey: "selectedArtistBoxIDs")
+        entity.setValue(try encode(item.selectedCatalogBoxIDs), forKey: "selectedCatalogBoxIDs")
         entity.setValue(try encode(item.editableFields), forKey: "editableFields")
         entity.setValue(try encode(item.queryHistory), forKey: "queryHistory")
         entity.setValue(try encode(item.latestCandidates), forKey: "latestCandidates")
         entity.setValue(try encode(item.selectedDiscogsMatch), forKey: "selectedMatch")
+        entity.setValue(try encode(item.confirmedDiscogsSummary), forKey: "confirmedDiscogsSummary")
+        entity.setValue(try encode(item.confirmedDiscogsRelease), forKey: "confirmedDiscogsRelease")
         entity.setValue(item.unresolved, forKey: "unresolved")
         entity.setValue(try encode(item.tags), forKey: "tags")
 
@@ -89,6 +95,8 @@ final class CoreDataRecordRepository: RecordRepository {
             return nil
         }
 
+        let selectedMatch: DiscogsCandidate? = decode(object.value(forKey: "selectedMatch") as? Data, fallback: Optional<DiscogsCandidate>.none)
+
         return RecordItem(
             id: id,
             createdAt: createdAt,
@@ -96,10 +104,16 @@ final class CoreDataRecordRepository: RecordRepository {
             imagePath: imagePath,
             correctedCropPath: object.value(forKey: "correctedCropPath") as? String,
             rawOCRText: rawOCRText,
+            ocrBoxes: decode(object.value(forKey: "ocrBoxes") as? Data, fallback: []),
+            selectedTitleBoxIDs: decode(object.value(forKey: "selectedTitleBoxIDs") as? Data, fallback: []),
+            selectedArtistBoxIDs: decode(object.value(forKey: "selectedArtistBoxIDs") as? Data, fallback: []),
+            selectedCatalogBoxIDs: decode(object.value(forKey: "selectedCatalogBoxIDs") as? Data, fallback: []),
             editableFields: decode(object.value(forKey: "editableFields") as? Data, fallback: .empty),
             queryHistory: decode(object.value(forKey: "queryHistory") as? Data, fallback: []),
             latestCandidates: decode(object.value(forKey: "latestCandidates") as? Data, fallback: []),
-            selectedDiscogsMatch: decode(object.value(forKey: "selectedMatch") as? Data, fallback: Optional<DiscogsCandidate>.none),
+            selectedDiscogsMatch: selectedMatch,
+            confirmedDiscogsSummary: decode(object.value(forKey: "confirmedDiscogsSummary") as? Data, fallback: selectedMatch.map(DiscogsReleaseSummary.init(candidate:))),
+            confirmedDiscogsRelease: decode(object.value(forKey: "confirmedDiscogsRelease") as? Data, fallback: Optional<DiscogsReleaseDetails>.none),
             unresolved: object.value(forKey: "unresolved") as? Bool ?? true,
             tags: decode(object.value(forKey: "tags") as? Data, fallback: [])
         )
