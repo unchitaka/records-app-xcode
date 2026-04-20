@@ -2,6 +2,7 @@ import AVFoundation
 import CoreImage
 import Foundation
 import ImageIO
+import UIKit
 import UniformTypeIdentifiers
 import Vision
 internal import Combine
@@ -45,13 +46,15 @@ final class CaptureViewModel: ObservableObject {
             Task { @MainActor in
                 switch result {
                 case .success(let data):
-                    let originalPath = self.persistCaptureData(data, prefix: "capture")
-                    let cropResult = self.cropProcessor.generateCorrectedCover(from: data)
-                    let ocrData = cropResult.data ?? data
+                    let normalizedCaptureData = ImageOrientationNormalizer.normalizedJPEGData(from: data) ?? data
+                    let originalPath = self.persistCaptureData(normalizedCaptureData, prefix: "capture")
+                    let cropResult = self.cropProcessor.generateCorrectedCover(from: normalizedCaptureData)
+                    let normalizedCorrectedData = cropResult.data.map { ImageOrientationNormalizer.normalizedJPEGData(from: $0) ?? $0 }
+                    let ocrData = normalizedCorrectedData ?? normalizedCaptureData
                     let ocrSource: OCRImageInputSource = cropResult.data != nil ? .correctedCrop : .originalFallback
 
                     let correctedPath: String?
-                    if let correctedData = cropResult.data {
+                    if let correctedData = normalizedCorrectedData {
                         correctedPath = self.persistCaptureData(correctedData, prefix: "corrected")
                     } else {
                         correctedPath = nil
@@ -104,6 +107,23 @@ final class CaptureViewModel: ObservableObject {
         }
 
         return file.path
+    }
+}
+
+private enum ImageOrientationNormalizer {
+    static func normalizedJPEGData(from data: Data, compressionQuality: CGFloat = 0.92) -> Data? {
+        guard let image = UIImage(data: data) else { return nil }
+        if image.imageOrientation == .up {
+            return image.jpegData(compressionQuality: compressionQuality) ?? data
+        }
+
+        UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
+        defer { UIGraphicsEndImageContext() }
+        image.draw(in: CGRect(origin: .zero, size: image.size))
+        guard let normalizedImage = UIGraphicsGetImageFromCurrentImageContext() else {
+            return image.jpegData(compressionQuality: compressionQuality) ?? data
+        }
+        return normalizedImage.jpegData(compressionQuality: compressionQuality)
     }
 }
 

@@ -34,8 +34,7 @@ struct ReviewEditView: View {
                     imagePath: viewModel.session.correctedCropPath ?? viewModel.session.imagePath,
                     boxes: viewModel.session.ocrBoxes,
                     isBoxSelected: { box in viewModel.isBoxSelected(box.id) },
-                    isBoxSelectedInMode: { box in viewModel.isBoxSelectedInActiveMode(box.id) },
-                    onTapBox: { box in viewModel.toggleSelection(for: box) }
+                    isBoxSelectedInMode: { box in viewModel.isBoxSelectedInActiveMode(box.id) }
                 )
                 .frame(height: 280)
 
@@ -45,6 +44,24 @@ struct ReviewEditView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+
+                if viewModel.session.ocrBoxes.isEmpty {
+                    Text("No OCR items recognized.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(viewModel.session.ocrBoxes) { box in
+                        Button {
+                            viewModel.toggleSelection(for: box)
+                        } label: {
+                            OCRListRow(
+                                text: box.text,
+                                confidence: box.confidence,
+                                state: viewModel.selectionState(for: box.id)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
             }
 
             if viewModel.stage == .basic || viewModel.stage == .advanced || viewModel.stage == .lookup {
@@ -191,7 +208,6 @@ private struct OCRSelectionImageView: View {
     let boxes: [OCRTextBox]
     let isBoxSelected: (OCRTextBox) -> Bool
     let isBoxSelectedInMode: (OCRTextBox) -> Bool
-    let onTapBox: (OCRTextBox) -> Void
 
     var body: some View {
         GeometryReader { proxy in
@@ -215,8 +231,6 @@ private struct OCRSelectionImageView: View {
                             )
                             .frame(width: rect.width, height: rect.height)
                             .position(x: rect.midX, y: rect.midY)
-                            .contentShape(Rectangle())
-                            .onTapGesture { onTapBox(box) }
                     }
                 }
             } else {
@@ -249,5 +263,55 @@ private struct OCRSelectionImageView: View {
         let width = normalized.width * imageFrame.width
         let height = normalized.height * imageFrame.height
         return CGRect(x: x, y: y, width: width, height: height)
+    }
+}
+
+private struct OCRListRow: View {
+    let text: String
+    let confidence: Float
+    let state: ReviewEditViewModel.OCRSelectionState
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: iconName)
+                .foregroundStyle(iconColor)
+                .frame(width: 18)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(text)
+                    .font(.body)
+                    .foregroundStyle(.primary)
+                    .multilineTextAlignment(.leading)
+                Text("Confidence: \(Int((confidence * 100).rounded()))%")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 8)
+        }
+        .padding(.vertical, 4)
+        .contentShape(Rectangle())
+    }
+
+    private var iconName: String {
+        switch state {
+        case .selectedInCurrentMode:
+            return "checkmark.circle.fill"
+        case .selectedInOtherMode:
+            return "circle.dashed"
+        case .unselected:
+            return "circle"
+        }
+    }
+
+    private var iconColor: Color {
+        switch state {
+        case .selectedInCurrentMode:
+            return .green
+        case .selectedInOtherMode:
+            return .blue
+        case .unselected:
+            return .secondary
+        }
     }
 }
