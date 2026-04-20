@@ -8,8 +8,8 @@ struct CameraPreviewView: UIViewRepresentable {
     func makeUIView(context: Context) -> PreviewContainerView {
         let view = PreviewContainerView()
         view.previewLayer.videoGravity = .resizeAspectFill
-        view.previewLayer.connection?.videoOrientation = .portrait
         view.previewLayer.session = session
+        applyPortraitOrientation(to: view.previewLayer.connection)
         return view
     }
 
@@ -18,7 +18,17 @@ struct CameraPreviewView: UIViewRepresentable {
             uiView.previewLayer.session = session
         }
 
-        if let connection = uiView.previewLayer.connection, connection.isVideoOrientationSupported {
+        applyPortraitOrientation(to: uiView.previewLayer.connection)
+    }
+
+    private func applyPortraitOrientation(to connection: AVCaptureConnection?) {
+        guard let connection else { return }
+
+        if #available(iOS 17.0, *) {
+            let portraitRotationAngle: CGFloat = 90
+            guard connection.isVideoRotationAngleSupported(portraitRotationAngle) else { return }
+            connection.videoRotationAngle = portraitRotationAngle
+        } else if connection.isVideoOrientationSupported {
             connection.videoOrientation = .portrait
         }
     }

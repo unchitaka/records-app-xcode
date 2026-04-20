@@ -89,7 +89,6 @@ final class AVCameraService: NSObject, CameraService {
 
             session.addInput(input)
             session.addOutput(output)
-            output.isHighResolutionCaptureEnabled = true
             isConfigured = true
 
         } catch {
@@ -98,6 +97,7 @@ final class AVCameraService: NSObject, CameraService {
     }
 }
 
+@preconcurrency
 extension AVCameraService: AVCapturePhotoCaptureDelegate {
     func photoOutput(
         _ output: AVCapturePhotoOutput,
