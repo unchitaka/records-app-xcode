@@ -76,13 +76,16 @@ final class VisionOCRService: OCRService {
         }
 
         let title = nonCatalogLines.first ?? lines.first ?? ""
-        let artist = inferArtistLine(from: nonCatalogLines.dropFirst(), fallback: lines.dropFirst())
+        let artist = inferArtistLine(
+            from: Array(nonCatalogLines.dropFirst()),
+            fallback: Array(lines.dropFirst())
+        )
         let year = detectYear(in: text)
 
         return EditableFields(title: title, artist: artist, catalogNumber: catalog, label: "", year: year)
     }
 
-    private func inferArtistLine<S: Sequence>(from primary: S, fallback: S) -> String where S.Element == String {
+    private func inferArtistLine(from primary: [String], fallback: [String]) -> String {
         let likelyArtist = primary.first {
             let lowered = $0.lowercased()
             return lowered.contains(" - ")
