@@ -39,6 +39,8 @@ struct OCRNormalizedRect: Codable, Equatable {
 struct DiscogsCandidate: Codable, Equatable, Identifiable {
     let id: Int
     var title: String
+    var artist: String?
+    var catalogNumber: String?
     var year: String?
     var country: String?
     var format: String?
@@ -50,6 +52,8 @@ struct DiscogsCandidate: Codable, Equatable, Identifiable {
 struct DiscogsReleaseSummary: Codable, Equatable {
     let id: Int
     var title: String
+    var artist: String?
+    var catalogNumber: String?
     var year: String?
     var country: String?
     var format: String?
@@ -60,6 +64,8 @@ struct DiscogsReleaseSummary: Codable, Equatable {
     init(candidate: DiscogsCandidate) {
         id = candidate.id
         title = candidate.title
+        artist = candidate.artist
+        catalogNumber = candidate.catalogNumber
         year = candidate.year
         country = candidate.country
         format = candidate.format
