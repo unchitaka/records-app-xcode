@@ -108,7 +108,7 @@ final class AVCameraService: NSObject, CameraService {
     }
 }
 
-private final class PhotoCaptureProcessor: NSObject, @preconcurrency AVCapturePhotoCaptureDelegate {
+private final class PhotoCaptureProcessor: NSObject, AVCapturePhotoCaptureDelegate {
     private let onResult: (Result<Data, Error>) -> Void
 
     init(onResult: @escaping (Result<Data, Error>) -> Void) {

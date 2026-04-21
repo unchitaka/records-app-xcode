@@ -199,7 +199,7 @@ struct ReviewEditView: View {
 
             if let message = viewModel.saveMessage {
                 Text(message)
-                    .foregroundStyle(viewModel.canSave ? .secondary : .red)
+                    .foregroundStyle(viewModel.canSave ? Color.secondary : Color.red)
             }
         }
         .navigationTitle("Review & Edit")
