@@ -121,7 +121,7 @@ struct ReviewEditView: View {
                         Text(lookupError).foregroundStyle(.red)
                     }
 
-                    ForEach(Array(viewModel.session.candidates.prefix(3))) { candidate in
+                    ForEach(viewModel.session.candidates.prefix(3), id: \.id) { candidate in
                         DiscogsCandidateRow(
                             candidate: candidate,
                             isSelected: viewModel.session.selectedCandidateID == candidate.id
