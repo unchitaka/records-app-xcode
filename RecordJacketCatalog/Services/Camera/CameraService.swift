@@ -16,6 +16,7 @@ final class AVCameraService: NSObject, CameraService {
     private let sessionQueue = DispatchQueue(label: "camera.session.queue")
 
     private var pendingCompletion: ((Result<Data, Error>) -> Void)?
+    private var photoCaptureProcessor: PhotoCaptureProcessor?
     private var isConfigured = false
 
     init(logger: AppLogger) {
@@ -59,7 +60,17 @@ final class AVCameraService: NSObject, CameraService {
             self.pendingCompletion = completion
 
             let settings = AVCapturePhotoSettings()
-            self.output.capturePhoto(with: settings, delegate: self)
+            let processor = PhotoCaptureProcessor { [weak self] result in
+                guard let self else { return }
+                self.sessionQueue.async {
+                    let completion = self.pendingCompletion
+                    self.pendingCompletion = nil
+                    self.photoCaptureProcessor = nil
+                    completion?(result)
+                }
+            }
+            self.photoCaptureProcessor = processor
+            self.output.capturePhoto(with: settings, delegate: processor)
         }
     }
 
@@ -97,27 +108,29 @@ final class AVCameraService: NSObject, CameraService {
     }
 }
 
-@preconcurrency
-extension AVCameraService: AVCapturePhotoCaptureDelegate {
+private final class PhotoCaptureProcessor: NSObject, AVCapturePhotoCaptureDelegate {
+    private let onResult: (Result<Data, Error>) -> Void
+
+    init(onResult: @escaping (Result<Data, Error>) -> Void) {
+        self.onResult = onResult
+    }
+
     func photoOutput(
         _ output: AVCapturePhotoOutput,
         didFinishProcessingPhoto photo: AVCapturePhoto,
         error: Error?
     ) {
-        let completion = pendingCompletion
-        pendingCompletion = nil
-
         if let error {
-            completion?(.failure(error))
+            onResult(.failure(error))
             return
         }
 
         guard let data = photo.fileDataRepresentation() else {
-            completion?(.failure(CameraError.emptyCapture))
+            onResult(.failure(CameraError.emptyCapture))
             return
         }
 
-        completion?(.success(data))
+        onResult(.success(data))
     }
 }
 

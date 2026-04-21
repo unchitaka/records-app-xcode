@@ -96,26 +96,26 @@ struct ReviewEditView: View {
                         Text(lookupError).foregroundStyle(.red)
                     }
 
-                    ForEach(viewModel.session.candidates) { candidate in
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(candidate.title).font(.headline)
-                            Text([candidate.year, candidate.country, candidate.format]
-                                .compactMap { $0 }
-                                .joined(separator: " · "))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                            Button(
-                                viewModel.isConfirmingCandidate && viewModel.session.selectedCandidateID == candidate.id
-                                ? "Confirming..."
-                                : "Confirm Match"
-                            ) {
-                                Task { await viewModel.confirmCandidate(candidate) }
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .disabled(viewModel.isConfirmingCandidate)
+                    ForEach(Array(viewModel.session.candidates.prefix(3))) { candidate in
+                        DiscogsCandidateRow(
+                            candidate: candidate,
+                            isSelected: viewModel.session.selectedCandidateID == candidate.id
+                        )
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            viewModel.selectCandidate(candidate)
                         }
                     }
+
+                    Button(
+                        viewModel.isConfirmingCandidate
+                        ? "Confirming..."
+                        : "Confirm Selected Match"
+                    ) {
+                        Task { await viewModel.confirmSelectedCandidate() }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(viewModel.isConfirmingCandidate || viewModel.selectedCandidate == nil)
 
                     Button("Save as unresolved") {
                         viewModel.markUnresolved()
@@ -313,5 +313,37 @@ private struct OCRListRow: View {
         case .unselected:
             return .secondary
         }
+    }
+}
+
+private struct DiscogsCandidateRow: View {
+    let candidate: DiscogsCandidate
+    let isSelected: Bool
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: isSelected ? "largecircle.fill.circle" : "circle")
+                .foregroundStyle(isSelected ? .blue : .secondary)
+                .padding(.top, 2)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(candidate.title)
+                    .font(.subheadline.weight(.semibold))
+                Text(candidate.artist ?? "Unknown artist")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text("Cat#: \(candidate.catalogNumber?.isEmpty == false ? candidate.catalogNumber! : "N/A")")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+
+                let metadata = [candidate.year, candidate.country].compactMap { $0 }.joined(separator: " · ")
+                if !metadata.isEmpty {
+                    Text(metadata)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+        }
+        .padding(.vertical, 4)
     }
 }

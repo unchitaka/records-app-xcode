@@ -25,6 +25,7 @@
 		D6CDC21A2F931BB600CE86DC /* CameraService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6CDC2012F931BB600CE86DC /* CameraService.swift */; };
 		D6CDC21B2F931BB600CE86DC /* CaptureFlowHostView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6CDC1EF2F931BB600CE86DC /* CaptureFlowHostView.swift */; };
 		D6CDC21C2F931BB600CE86DC /* RecordDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6CDC1F32F931BB600CE86DC /* RecordDetailView.swift */; };
+		D6E2AA012F95000100CE86DC /* ArtistRecordsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E2AA002F95000100CE86DC /* ArtistRecordsListView.swift */; };
 		D6E111112F94000000CE86DC /* CameraPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E111102F94000000CE86DC /* CameraPreviewView.swift */; };
 		D6E111132F94000000CE86DC /* RecordModel.xcdatamodeld in Resources */ = {isa = PBXBuildFile; fileRef = D6C2C9732F933A8E00AEB227 /* RecordModel.xcdatamodeld */; };
 /* End PBXBuildFile section */
@@ -39,6 +40,7 @@
 		D6CDC1F32F931BB600CE86DC /* RecordDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordDetailView.swift; sourceTree = "<group>"; };
 		D6CDC1F42F931BB600CE86DC /* SavedRecordsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedRecordsListView.swift; sourceTree = "<group>"; };
 		D6CDC1F52F931BB600CE86DC /* SavedRecordsListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedRecordsListViewModel.swift; sourceTree = "<group>"; };
+		D6E2AA002F95000100CE86DC /* ArtistRecordsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtistRecordsListView.swift; sourceTree = "<group>"; };
 		D6CDC1F72F931BB600CE86DC /* ReviewEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewEditView.swift; sourceTree = "<group>"; };
 		D6CDC1F82F931BB600CE86DC /* ReviewEditViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewEditViewModel.swift; sourceTree = "<group>"; };
 		D6CDC1FB2F931BB600CE86DC /* RecordModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordModels.swift; sourceTree = "<group>"; };
@@ -98,6 +100,7 @@
 				D6CDC1F32F931BB600CE86DC /* RecordDetailView.swift */,
 				D6CDC1F42F931BB600CE86DC /* SavedRecordsListView.swift */,
 				D6CDC1F52F931BB600CE86DC /* SavedRecordsListViewModel.swift */,
+				D6E2AA002F95000100CE86DC /* ArtistRecordsListView.swift */,
 			);
 			path = Records;
 			sourceTree = "<group>";
@@ -285,6 +288,7 @@
 				D6CDC21A2F931BB600CE86DC /* CameraService.swift in Sources */,
 				D6CDC21B2F931BB600CE86DC /* CaptureFlowHostView.swift in Sources */,
 				D6CDC21C2F931BB600CE86DC /* RecordDetailView.swift in Sources */,
+				D6E2AA012F95000100CE86DC /* ArtistRecordsListView.swift in Sources */,
 				D6E111112F94000000CE86DC /* CameraPreviewView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

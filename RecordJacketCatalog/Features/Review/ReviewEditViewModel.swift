@@ -40,6 +40,11 @@ final class ReviewEditViewModel: ObservableObject {
         case unselected
     }
 
+    var selectedCandidate: DiscogsCandidate? {
+        guard let selectedID = session.selectedCandidateID else { return nil }
+        return session.candidates.first { $0.id == selectedID }
+    }
+
     func runLookup() async {
         isLookingUp = true
         lookupError = nil
@@ -52,7 +57,7 @@ final class ReviewEditViewModel: ObservableObject {
 
         do {
             let candidates = try await discogs.searchCandidates(fields: session.fields)
-            session.candidates = candidates
+            session.candidates = Array(candidates.prefix(3))
             session.selectedCandidateID = nil
             session.selectedDiscogsMatch = nil
             session.confirmedDiscogsSummary = nil
@@ -84,7 +89,16 @@ final class ReviewEditViewModel: ObservableObject {
         }
     }
 
-    func confirmCandidate(_ candidate: DiscogsCandidate) async {
+    func selectCandidate(_ candidate: DiscogsCandidate) {
+        session.selectedCandidateID = candidate.id
+    }
+
+    func confirmSelectedCandidate() async {
+        guard let candidate = selectedCandidate else { return }
+        await confirmCandidate(candidate)
+    }
+
+    private func confirmCandidate(_ candidate: DiscogsCandidate) async {
         isConfirmingCandidate = true
         lookupError = nil
 

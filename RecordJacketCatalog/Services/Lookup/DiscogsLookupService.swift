@@ -50,61 +50,36 @@ final class LiveDiscogsLookupService: DiscogsLookupService {
     }
 
     func searchCandidates(fields: EditableFields) async throws -> [DiscogsCandidate] {
-        let title = fields.title.trimmingCharacters(in: .whitespacesAndNewlines)
-        let artist = fields.artist.trimmingCharacters(in: .whitespacesAndNewlines)
-        let catalog = fields.catalogNumber.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalized = NormalizedQuery(fields: fields)
 
-        guard !title.isEmpty || !artist.isEmpty || !catalog.isEmpty else {
+        guard normalized.hasQuery else {
             throw DiscogsLookupError.emptyQuery
         }
 
         try validateToken()
 
-        var components = URLComponents(string: "https://api.discogs.com/database/search")!
-        var queryItems: [URLQueryItem] = [
-            URLQueryItem(name: "type", value: "release"),
-            URLQueryItem(name: "per_page", value: "10"),
-            URLQueryItem(name: "token", value: DiscogsConfig.token)
-        ]
+        let strategies = searchStrategies(for: normalized)
 
-        if !title.isEmpty { queryItems.append(URLQueryItem(name: "release_title", value: title)) }
-        if !artist.isEmpty { queryItems.append(URLQueryItem(name: "artist", value: artist)) }
-        if !catalog.isEmpty { queryItems.append(URLQueryItem(name: "catno", value: catalog)) }
-        components.queryItems = queryItems
+        for strategy in strategies {
+            logger.info("Discogs search strategy start: \(strategy.name)")
 
-        guard let url = components.url else {
-            throw DiscogsLookupError.invalidResponse
+            do {
+                let candidates = try await performSearch(strategy: strategy)
+                if !candidates.isEmpty {
+                    logger.info("Discogs search strategy success: \(strategy.name) [\(candidates.count) candidates]")
+                    return Array(candidates.prefix(3))
+                }
+                logger.info("Discogs search strategy zero results: \(strategy.name)")
+            } catch let error as DiscogsLookupError {
+                if error == .zeroResults {
+                    logger.info("Discogs search strategy zero results: \(strategy.name)")
+                    continue
+                }
+                throw error
+            }
         }
 
-        logger.info("Discogs candidate search title='\(title)' artist='\(artist)' catalog='\(catalog)'")
-        let data = try await performRequest(url: url)
-
-        let decoded: DiscogsSearchResponse
-        do {
-            decoded = try JSONDecoder().decode(DiscogsSearchResponse.self, from: data)
-        } catch {
-            logger.error("Discogs candidate decoding failure: \(error.localizedDescription)")
-            throw DiscogsLookupError.decodingFailed
-        }
-
-        let candidates = decoded.results.map { result in
-            DiscogsCandidate(
-                id: result.id,
-                title: result.title,
-                year: result.year,
-                country: result.country,
-                format: result.format?.joined(separator: ", "),
-                resourceURL: result.resourceURL,
-                thumb: result.thumb,
-                uri: result.uri
-            )
-        }
-
-        if candidates.isEmpty {
-            throw DiscogsLookupError.zeroResults
-        }
-
-        return candidates
+        throw DiscogsLookupError.zeroResults
     }
 
     func fetchReleaseDetails(for candidate: DiscogsCandidate) async throws -> DiscogsReleaseDetails {
@@ -182,6 +157,93 @@ final class LiveDiscogsLookupService: DiscogsLookupService {
         }
     }
 
+    private func searchStrategies(for query: NormalizedQuery) -> [SearchStrategy] {
+        var strategies: [SearchStrategy] = []
+
+        if !query.catalogNumber.isEmpty {
+            strategies.append(SearchStrategy(name: "catalog_only", title: nil, artist: nil, catalog: query.catalogNumber))
+        }
+        if !query.title.isEmpty {
+            strategies.append(SearchStrategy(name: "title_only", title: query.title, artist: nil, catalog: nil))
+        }
+        if !query.title.isEmpty, !query.catalogNumber.isEmpty {
+            strategies.append(SearchStrategy(name: "title_catalog", title: query.title, artist: nil, catalog: query.catalogNumber))
+        }
+        if !query.title.isEmpty, !query.artist.isEmpty {
+            strategies.append(SearchStrategy(name: "title_artist", title: query.title, artist: query.artist, catalog: nil))
+        }
+        if !query.artist.isEmpty, !query.title.isEmpty, !query.catalogNumber.isEmpty {
+            strategies.append(SearchStrategy(name: "artist_title_catalog", title: query.title, artist: query.artist, catalog: query.catalogNumber))
+        }
+
+        return strategies
+    }
+
+    private func performSearch(strategy: SearchStrategy) async throws -> [DiscogsCandidate] {
+        var components = URLComponents(string: "https://api.discogs.com/database/search")!
+        var queryItems: [URLQueryItem] = [
+            URLQueryItem(name: "type", value: "release"),
+            URLQueryItem(name: "per_page", value: "10"),
+            URLQueryItem(name: "token", value: DiscogsConfig.token)
+        ]
+
+        if let title = strategy.title { queryItems.append(URLQueryItem(name: "release_title", value: title)) }
+        if let artist = strategy.artist { queryItems.append(URLQueryItem(name: "artist", value: artist)) }
+        if let catalog = strategy.catalog { queryItems.append(URLQueryItem(name: "catno", value: catalog)) }
+        components.queryItems = queryItems
+
+        guard let url = components.url else {
+            throw DiscogsLookupError.invalidResponse
+        }
+
+        let data = try await performRequest(url: url)
+
+        let decoded: DiscogsSearchResponse
+        do {
+            decoded = try JSONDecoder().decode(DiscogsSearchResponse.self, from: data)
+        } catch {
+            logger.error("Discogs candidate decoding failure: \(error.localizedDescription)")
+            throw DiscogsLookupError.decodingFailed
+        }
+
+        let candidates = decoded.results.map(Self.mapCandidate)
+
+        guard !candidates.isEmpty else {
+            throw DiscogsLookupError.zeroResults
+        }
+
+        return candidates
+    }
+
+    private static func mapCandidate(from result: DiscogsSearchResult) -> DiscogsCandidate {
+        let (artist, title) = splitResultTitle(result.title)
+
+        return DiscogsCandidate(
+            id: result.id,
+            title: title,
+            artist: result.artist ?? artist,
+            catalogNumber: result.catalogNumber,
+            year: result.year?.isEmpty == false ? result.year : nil,
+            country: result.country,
+            format: result.format?.joined(separator: ", "),
+            resourceURL: result.resourceURL,
+            thumb: result.thumb,
+            uri: result.uri
+        )
+    }
+
+    private static func splitResultTitle(_ value: String) -> (artist: String?, title: String) {
+        let clean = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let separatorRange = clean.range(of: " - ") else {
+            return (nil, clean)
+        }
+
+        let artist = String(clean[..<separatorRange.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+        let title = String(clean[separatorRange.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+
+        return (artist.isEmpty ? nil : artist, title.isEmpty ? clean : title)
+    }
+
     private func performRequest(url: URL) async throws -> Data {
         do {
             let (data, response) = try await URLSession.shared.data(from: url)
@@ -206,7 +268,7 @@ final class LiveDiscogsLookupService: DiscogsLookupService {
     }
 }
 
-enum DiscogsLookupError: LocalizedError {
+enum DiscogsLookupError: LocalizedError, Equatable {
     case missingToken
     case emptyQuery
     case zeroResults
@@ -245,6 +307,8 @@ private struct DiscogsSearchResponse: Codable {
 private struct DiscogsSearchResult: Codable {
     let id: Int
     let title: String
+    let artist: String?
+    let catalogNumber: String?
     let year: String?
     let country: String?
     let format: [String]?
@@ -253,8 +317,9 @@ private struct DiscogsSearchResult: Codable {
     let uri: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, title, year, country, format, thumb, uri
+        case id, title, year, country, format, thumb, uri, artist
         case resourceURL = "resource_url"
+        case catalogNumber = "catno"
     }
 }
 
@@ -316,5 +381,48 @@ private struct DiscogsReleaseResponse: Codable {
             case uri150 = "uri150"
             case resourceURL = "resource_url"
         }
+    }
+}
+
+private struct SearchStrategy {
+    let name: String
+    let title: String?
+    let artist: String?
+    let catalog: String?
+}
+
+private struct NormalizedQuery {
+    let title: String
+    let artist: String
+    let catalogNumber: String
+
+    init(fields: EditableFields) {
+        title = Self.normalize(fields.title)
+        artist = Self.normalize(fields.artist)
+        catalogNumber = Self.normalize(fields.catalogNumber)
+    }
+
+    var hasQuery: Bool {
+        !title.isEmpty || !artist.isEmpty || !catalogNumber.isEmpty
+    }
+
+    private static func normalize(_ value: String) -> String {
+        let halfWidth = value.applyingTransform(.fullwidthToHalfwidth, reverse: false) ?? value
+        let punctuationCollapsed = halfWidth.replacingOccurrences(
+            of: "[·•▪︎●○,;:|]+",
+            with: " ",
+            options: .regularExpression
+        )
+        let symbolsCollapsed = punctuationCollapsed.replacingOccurrences(
+            of: "[\\[\\]{}()]+",
+            with: " ",
+            options: .regularExpression
+        )
+        let compact = symbolsCollapsed.replacingOccurrences(
+            of: "\\s+",
+            with: " ",
+            options: .regularExpression
+        )
+        return compact.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
