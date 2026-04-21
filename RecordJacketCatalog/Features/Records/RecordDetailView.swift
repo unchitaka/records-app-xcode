@@ -1,10 +1,22 @@
 import SwiftUI
+import UIKit
 
 struct RecordDetailView: View {
     let record: RecordItem
 
     var body: some View {
         Form {
+            Section("Cover") {
+                if let image = UIImage(contentsOfFile: record.preferredImagePath) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity)
+                } else {
+                    ContentUnavailableView("Image unavailable", systemImage: "photo")
+                }
+            }
+
             Section("Core") {
                 row("Title", record.editableFields.title)
                 row("Artist", record.editableFields.artist)

@@ -6,6 +6,19 @@ struct ReviewEditView: View {
     let onSaved: () -> Void
 
     @State private var newTag = ""
+    @State private var editingBox: OCRTextBox?
+    @State private var editedOCRText = ""
+
+    private var isEditingPresented: Binding<Bool> {
+        Binding(
+            get: { editingBox != nil },
+            set: { isPresented in
+                if !isPresented {
+                    editingBox = nil
+                }
+            }
+        )
+    }
 
     var body: some View {
         Form {
@@ -31,7 +44,7 @@ struct ReviewEditView: View {
 
             Section("OCR Selection") {
                 OCRSelectionImageView(
-                    imagePath: viewModel.session.correctedCropPath ?? viewModel.session.imagePath,
+                    imagePath: viewModel.session.preferredImagePath,
                     boxes: viewModel.session.ocrBoxes,
                     isBoxSelected: { box in viewModel.isBoxSelected(box.id) },
                     isBoxSelectedInMode: { box in viewModel.isBoxSelectedInActiveMode(box.id) }
@@ -49,17 +62,22 @@ struct ReviewEditView: View {
                     Text("No OCR items recognized.")
                         .foregroundStyle(.secondary)
                 } else {
-                    ForEach(viewModel.session.ocrBoxes) { box in
+                    ForEach(viewModel.rankedOCRCandidates) { candidate in
                         Button {
-                            viewModel.toggleSelection(for: box)
+                            viewModel.toggleSelection(for: candidate.box)
                         } label: {
                             OCRListRow(
-                                text: box.text,
-                                confidence: box.confidence,
-                                state: viewModel.selectionState(for: box.id)
+                                text: candidate.box.text,
+                                confidence: candidate.box.confidence,
+                                state: viewModel.selectionState(for: candidate.box.id),
+                                likelyType: candidate.likelyType,
+                                hint: candidate.hint
                             )
                         }
                         .buttonStyle(.plain)
+                        .onLongPressGesture {
+                            beginEditing(candidate.box)
+                        }
                     }
                 }
             }
@@ -68,6 +86,13 @@ struct ReviewEditView: View {
                 Section("Basic fields") {
                     editableRow(title: "Title", text: $viewModel.session.fields.title, clearMode: .title)
                     editableRow(title: "Artist", text: $viewModel.session.fields.artist, clearMode: .artist)
+
+                    if let validation = viewModel.artistValidationMessage {
+                        Text(validation)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+
                     editableRow(title: "Catalog #", text: $viewModel.session.fields.catalogNumber, clearMode: .catalog)
                 }
             }
@@ -169,13 +194,33 @@ struct ReviewEditView: View {
                     }
                 }
                 .buttonStyle(.borderedProminent)
+                .disabled(!viewModel.canSave)
             }
 
             if let message = viewModel.saveMessage {
                 Text(message)
+                    .foregroundStyle(viewModel.canSave ? .secondary : .red)
             }
         }
         .navigationTitle("Review & Edit")
+        .alert("Edit OCR Candidate", isPresented: isEditingPresented) {
+            TextField("OCR text", text: $editedOCRText)
+            Button("Cancel", role: .cancel) {
+                editingBox = nil
+            }
+            Button("Save") {
+                guard let box = editingBox else { return }
+                viewModel.updateOCRText(boxID: box.id, newText: editedOCRText)
+                editingBox = nil
+            }
+        } message: {
+            Text("Long-press lets you correct OCR text while preserving the same OCR item.")
+        }
+    }
+
+    private func beginEditing(_ box: OCRTextBox) {
+        editingBox = box
+        editedOCRText = box.text
     }
 
     @ViewBuilder
@@ -270,6 +315,8 @@ private struct OCRListRow: View {
     let text: String
     let confidence: Float
     let state: ReviewEditViewModel.OCRSelectionState
+    let likelyType: ReviewEditViewModel.OCRLikelyType
+    let hint: String?
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -282,9 +329,26 @@ private struct OCRListRow: View {
                     .font(.body)
                     .foregroundStyle(.primary)
                     .multilineTextAlignment(.leading)
-                Text("Confidence: \(Int((confidence * 100).rounded()))%")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+
+                HStack(spacing: 8) {
+                    if likelyType != .unknown {
+                        Text(likelyType.rawValue)
+                            .font(.caption2)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(.thinMaterial, in: Capsule())
+                    }
+
+                    Text("Confidence: \(Int((confidence * 100).rounded()))%")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                if let hint {
+                    Text(hint)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Spacer(minLength: 8)

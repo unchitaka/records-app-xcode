@@ -57,6 +57,11 @@ struct ReviewSession {
 }
 
 extension ReviewSession {
+    var preferredImagePath: String {
+        let cropped = correctedCropPath?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return cropped.isEmpty ? imagePath : cropped
+    }
+
     init(record: RecordItem) {
         self.init(
             imagePath: record.imagePath,

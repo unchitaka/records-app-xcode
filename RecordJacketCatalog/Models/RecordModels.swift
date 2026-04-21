@@ -199,3 +199,10 @@ struct RecordItem: Codable, Equatable, Identifiable {
         self.tags = tags
     }
 }
+
+extension RecordItem {
+    var preferredImagePath: String {
+        let cropped = correctedCropPath?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return cropped.isEmpty ? imagePath : cropped
+    }
+}
