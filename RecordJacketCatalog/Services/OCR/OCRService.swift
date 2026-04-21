@@ -71,6 +71,7 @@ final class VisionOCRService: OCRService {
     private func extractFields(from boxes: [OCRTextBox], fallbackRawText: String) -> EditableFields {
         let text = fallbackRawText
         let lines = boxes.map(\.text)
+        let ranked = rankCandidates(from: boxes)
 
         let catalogPatterns = [
             #"\b([A-Z]{1,6}[\-\s]?[A-Z0-9]{1,8}[\-\s]?[0-9]{1,6})\b"#,
@@ -94,11 +95,17 @@ final class VisionOCRService: OCRService {
             catalog.isEmpty || !line.localizedCaseInsensitiveContains(catalog)
         }
 
-        let title = nonCatalogLines.first ?? lines.first ?? ""
-        let artist = nonCatalogLines.dropFirst().first ?? lines.dropFirst().first ?? ""
+        let rankedCatalog = ranked.first(where: { $0.kind == .catalog })?.box.text ?? ""
+        let resolvedCatalog = !catalog.isEmpty ? catalog : rankedCatalog
+        let rankedTitle = ranked.first(where: { $0.kind == .title && !$0.box.text.isEmpty })?.box.text ?? ""
+        let rankedArtist = ranked.first(where: { $0.kind == .artist && !$0.box.text.isEmpty })?.box.text ?? ""
+        let title = !rankedTitle.isEmpty ? rankedTitle : (nonCatalogLines.first ?? lines.first ?? "")
+        let artist = !rankedArtist.isEmpty
+            ? rankedArtist
+            : (nonCatalogLines.dropFirst().first ?? lines.dropFirst().first ?? "")
         let year = detectYear(in: text)
 
-        return EditableFields(title: title, artist: artist, catalogNumber: catalog, label: "", year: year)
+        return EditableFields(title: title, artist: artist, catalogNumber: resolvedCatalog, label: "", year: year)
     }
 
     private func detectYear(in text: String) -> String {
@@ -122,5 +129,70 @@ final class VisionOCRService: OCRService {
             return leftY > rightY
         }
         return lhs.normalizedRect.x < rhs.normalizedRect.x
+    }
+
+    private enum RankedKind {
+        case catalog
+        case title
+        case artist
+    }
+
+    private struct RankedBox {
+        let box: OCRTextBox
+        let score: Double
+        let kind: RankedKind
+    }
+
+    private func rankCandidates(from boxes: [OCRTextBox]) -> [RankedBox] {
+        boxes.enumerated()
+            .map { index, box in
+                let text = box.text.trimmingCharacters(in: .whitespacesAndNewlines)
+                let hasDigits = text.rangeOfCharacter(from: .decimalDigits) != nil
+                let containsJapanese = text.unicodeScalars.contains { scalar in
+                    switch scalar.value {
+                    case 0x3040...0x30FF, 0x3400...0x4DBF, 0x4E00...0x9FFF:
+                        return true
+                    default:
+                        return false
+                    }
+                }
+
+                var catalogScore = hasDigits ? 40.0 : 0.0
+                if hasDigits && text.range(of: #"[A-Za-z]{1,6}[\-\s]?[A-Za-z0-9]{1,10}[\-\s]?[0-9]{1,6}"#, options: .regularExpression) != nil {
+                    catalogScore += 15
+                }
+
+                var titleScore = containsJapanese ? 24.0 : 8.0
+                var artistScore = containsJapanese ? 22.0 : 8.0
+                if (4...36).contains(text.count) {
+                    titleScore += 6
+                    artistScore += 8
+                }
+                if text.contains("・") || text.contains("&") || text.contains("/") {
+                    artistScore += 6
+                }
+
+                let likelyKind: RankedKind = {
+                    if catalogScore >= max(titleScore, artistScore) { return .catalog }
+                    if artistScore >= titleScore { return .artist }
+                    return .title
+                }()
+
+                var score = Double(box.confidence) * 10
+                score += max(catalogScore, titleScore, artistScore)
+                if text.count <= 2 { score -= 15 }
+                if text.range(of: #"^[\p{P}\p{S}\s]+$"#, options: .regularExpression) != nil {
+                    score -= 30
+                }
+
+                score -= Double(index) * 0.01
+                return RankedBox(box: box, score: score, kind: likelyKind)
+            }
+            .sorted { lhs, rhs in
+                if abs(lhs.score - rhs.score) > 0.0001 {
+                    return lhs.score > rhs.score
+                }
+                return Self.readingOrder(lhs: lhs.box, rhs: rhs.box)
+            }
     }
 }

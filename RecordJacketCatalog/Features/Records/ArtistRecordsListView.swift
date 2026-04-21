@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct ArtistRecordsListView: View {
     let artistName: String
@@ -9,12 +10,27 @@ struct ArtistRecordsListView: View {
             NavigationLink {
                 RecordDetailView(record: item)
             } label: {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(item.editableFields.title.isEmpty ? "(Untitled)" : item.editableFields.title)
-                        .font(.headline)
-                    Text(item.editableFields.catalogNumber)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                HStack(spacing: 12) {
+                    if let image = UIImage(contentsOfFile: item.preferredImagePath) {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 52, height: 52)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    } else {
+                        Image(systemName: "photo")
+                            .frame(width: 52, height: 52)
+                            .background(.thinMaterial)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(item.editableFields.title.isEmpty ? "(Untitled)" : item.editableFields.title)
+                            .font(.headline)
+                        Text(item.editableFields.catalogNumber)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
         }

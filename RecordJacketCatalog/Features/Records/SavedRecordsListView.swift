@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct SavedRecordsListView: View {
     @StateObject var viewModel: SavedRecordsListViewModel
@@ -28,12 +29,16 @@ struct SavedRecordsListView: View {
                     }
                 )
             } label: {
-                VStack(alignment: .leading) {
-                    Text(item.editableFields.title.isEmpty ? "(Untitled)" : item.editableFields.title)
-                        .font(.headline)
-                    Text(item.editableFields.artist)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                HStack(spacing: 12) {
+                    RecordThumbnailView(imagePath: item.preferredImagePath, size: 52)
+
+                    VStack(alignment: .leading) {
+                        Text(item.editableFields.title.isEmpty ? "(Untitled)" : item.editableFields.title)
+                            .font(.headline)
+                        Text(item.editableFields.artist)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
         }
@@ -71,5 +76,29 @@ struct SavedRecordsListView: View {
         .searchable(text: $viewModel.artistSearchText, prompt: "Search artists")
         .navigationTitle("Artists")
         .onAppear { viewModel.load() }
+    }
+}
+
+private struct RecordThumbnailView: View {
+    let imagePath: String
+    let size: CGFloat
+
+    var body: some View {
+        Group {
+            if let image = UIImage(contentsOfFile: imagePath) {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Image(systemName: "photo")
+                    .resizable()
+                    .scaledToFit()
+                    .padding(10)
+                    .foregroundStyle(.secondary)
+                    .background(.thinMaterial)
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
