@@ -64,6 +64,7 @@ final class CaptureViewModel: ObservableObject {
                     let ocrResult = await self.ocr.processImageData(ocrData)
 
                     let session = ReviewSession(
+                        id: UUID(),
                         imagePath: originalPath,
                         correctedCropPath: correctedPath,
                         ocrInputSource: ocrSource,
