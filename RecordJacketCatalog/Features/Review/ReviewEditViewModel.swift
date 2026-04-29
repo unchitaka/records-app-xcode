@@ -15,6 +15,9 @@ final class ReviewEditViewModel: ObservableObject {
     private let repository: RecordRepository
     private let discogs: DiscogsLookupService
     private let coverMatcher: CoverImageMatchService
+    private var hasUserModifiedTitle = false
+    private var hasUserModifiedArtist = false
+    private var hasUserModifiedCatalog = false
 
     init(
         session: ReviewSession,
@@ -26,6 +29,7 @@ final class ReviewEditViewModel: ObservableObject {
         self.repository = repository
         self.discogs = discogs
         self.coverMatcher = coverMatcher
+        applyInitialBestSelectionsIfNeeded()
     }
 
     enum EditStage: String, CaseIterable {
@@ -174,15 +178,23 @@ final class ReviewEditViewModel: ObservableObject {
         session.confirmedDiscogsRelease = nil
     }
 
+    func saveAsUnresolved() {
+        markUnresolved()
+        save()
+    }
+
     func toggleSelection(for box: OCRTextBox) {
         switch selectionMode {
         case .title:
+            hasUserModifiedTitle = true
             toggleID(box.id, in: &session.selectedTitleBoxIDs)
             session.fields.title = combinedText(from: session.selectedTitleBoxIDs)
         case .artist:
+            hasUserModifiedArtist = true
             toggleID(box.id, in: &session.selectedArtistBoxIDs)
             session.fields.artist = combinedText(from: session.selectedArtistBoxIDs)
         case .catalog:
+            hasUserModifiedCatalog = true
             toggleID(box.id, in: &session.selectedCatalogBoxIDs)
             session.fields.catalogNumber = combinedText(from: session.selectedCatalogBoxIDs)
         }
@@ -209,12 +221,15 @@ final class ReviewEditViewModel: ObservableObject {
     func clearSelection(for mode: OCRSelectionMode) {
         switch mode {
         case .title:
+            hasUserModifiedTitle = true
             session.selectedTitleBoxIDs = []
             session.fields.title = ""
         case .artist:
+            hasUserModifiedArtist = true
             session.selectedArtistBoxIDs = []
             session.fields.artist = ""
         case .catalog:
+            hasUserModifiedCatalog = true
             session.selectedCatalogBoxIDs = []
             session.fields.catalogNumber = ""
         }
@@ -310,12 +325,16 @@ final class ReviewEditViewModel: ObservableObject {
 
         let length = text.count
         let hasDigits = text.rangeOfCharacter(from: .decimalDigits) != nil
+        let hasHyphen = text.contains("-")
         let punctuation = CharacterSet.punctuationCharacters.union(.symbols)
         let punctuationCount = text.unicodeScalars.filter { punctuation.contains($0) }.count
         let alphaNumericCount = text.unicodeScalars.filter { CharacterSet.alphanumerics.contains($0) }.count
         let onlyNoise = alphaNumericCount == 0
 
         var catalogScore = hasDigits ? 30 : 0
+        if hasDigits && hasHyphen {
+            catalogScore += 18
+        }
         if hasDigits && text.range(of: #"[A-Za-z]{1,6}[\-\s]?[A-Za-z0-9]{1,10}[\-\s]?[0-9]{1,6}"#, options: .regularExpression) != nil {
             catalogScore += 15
         }
@@ -368,6 +387,47 @@ final class ReviewEditViewModel: ObservableObject {
         }
 
         return (baseScore - Double(originalIndex) * 0.01, likelyType, hint)
+    }
+
+    private func applyInitialBestSelectionsIfNeeded() {
+        guard !session.ocrBoxes.isEmpty else { return }
+
+        if !hasUserModifiedTitle,
+           session.selectedTitleBoxIDs.isEmpty,
+           session.fields.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+           let titleBox = bestCandidate(for: .title) {
+            session.selectedTitleBoxIDs = [titleBox.id]
+            session.fields.title = titleBox.text
+        }
+
+        if !hasUserModifiedArtist,
+           session.selectedArtistBoxIDs.isEmpty,
+           session.fields.artist.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+           let artistBox = bestCandidate(for: .artist) {
+            session.selectedArtistBoxIDs = [artistBox.id]
+            session.fields.artist = artistBox.text
+        }
+
+        if !hasUserModifiedCatalog,
+           session.selectedCatalogBoxIDs.isEmpty,
+           session.fields.catalogNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+           let catalogBox = bestCandidate(for: .catalog) {
+            session.selectedCatalogBoxIDs = [catalogBox.id]
+            session.fields.catalogNumber = catalogBox.text
+        }
+    }
+
+    private func bestCandidate(for mode: OCRSelectionMode) -> OCRTextBox? {
+        rankedOCRCandidates.first(where: { candidate in
+            switch mode {
+            case .title:
+                return candidate.likelyType == .title
+            case .artist:
+                return candidate.likelyType == .artist
+            case .catalog:
+                return candidate.likelyType == .catalog
+            }
+        })?.box
     }
 
     private static func containsKanaOrKanji(_ text: String) -> Bool {

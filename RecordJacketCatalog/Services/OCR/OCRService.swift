@@ -148,6 +148,7 @@ final class VisionOCRService: OCRService {
             .map { index, box in
                 let text = box.text.trimmingCharacters(in: .whitespacesAndNewlines)
                 let hasDigits = text.rangeOfCharacter(from: .decimalDigits) != nil
+                let hasHyphen = text.contains("-")
                 let containsJapanese = text.unicodeScalars.contains { scalar in
                     switch scalar.value {
                     case 0x3040...0x30FF, 0x3400...0x4DBF, 0x4E00...0x9FFF:
@@ -158,6 +159,9 @@ final class VisionOCRService: OCRService {
                 }
 
                 var catalogScore = hasDigits ? 40.0 : 0.0
+                if hasDigits && hasHyphen {
+                    catalogScore += 20.0
+                }
                 if hasDigits && text.range(of: #"[A-Za-z]{1,6}[\-\s]?[A-Za-z0-9]{1,10}[\-\s]?[0-9]{1,6}"#, options: .regularExpression) != nil {
                     catalogScore += 15
                 }
