@@ -70,7 +70,11 @@ final class CoreDataRecordRepository: RecordRepository {
             throw saveError
         }
 
-        NotificationCenter.default.post(name: .recordRepositoryDidChange, object: nil)
+        if try fetch(id: item.id) != nil {
+            NotificationCenter.default.post(name: .recordRepositoryDidChange, object: nil)
+        } else {
+            logger.error("Save verification failed for id=\(item.id.uuidString); change notification suppressed.")
+        }
     }
 
     func fetchAll(unresolvedOnly: Bool) throws -> [RecordItem] {

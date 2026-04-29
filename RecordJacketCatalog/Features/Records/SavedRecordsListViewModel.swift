@@ -56,6 +56,7 @@ final class SavedRecordsListViewModel: ObservableObject {
 
         return items.filter { item in
             item.editableFields.artist.localizedCaseInsensitiveContains(query)
+            || primaryArtist(from: item).localizedCaseInsensitiveContains(query)
             || item.artistIndex.localizedCaseInsensitiveContains(query)
         }
     }
@@ -113,14 +114,14 @@ final class SavedRecordsListViewModel: ObservableObject {
         let explicit = record.editableFields.artist.trimmingCharacters(in: .whitespacesAndNewlines)
         if !explicit.isEmpty { return explicit }
 
-        let indexArtist = record.artistIndex.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !indexArtist.isEmpty, indexArtist != "unknown artist" { return indexArtist }
-
         let discogs = record.confirmedDiscogsSummary?.artist?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         if !discogs.isEmpty { return discogs }
 
         let selectedDiscogs = record.selectedDiscogsMatch?.artist?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         if !selectedDiscogs.isEmpty { return selectedDiscogs }
+
+        let indexArtist = record.artistIndex.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !indexArtist.isEmpty, indexArtist.lowercased() != "unknown artist" { return indexArtist }
 
         return "Unknown Artist"
     }

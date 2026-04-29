@@ -3,12 +3,18 @@ internal import Combine
 
 @MainActor
 final class ReviewEditViewModel: ObservableObject {
+    enum SaveResult: Equatable {
+        case savedToSaved
+        case savedToUnresolved
+        case failed(message: String)
+    }
 
     @Published var session: ReviewSession
     @Published var isLookingUp = false
     @Published var isConfirmingCandidate = false
     @Published var lookupError: String?
     @Published var saveMessage: String?
+    @Published var lastSaveResult: SaveResult?
     @Published var stage: EditStage = .basic
     @Published var selectionMode: OCRSelectionMode = .title
 
@@ -180,9 +186,9 @@ final class ReviewEditViewModel: ObservableObject {
         session.confirmedDiscogsRelease = nil
     }
 
-    func saveAsUnresolved() {
+    func saveAsUnresolved() -> Bool {
         markUnresolved()
-        save()
+        return save()
     }
 
     func toggleSelection(for box: OCRTextBox) {
@@ -264,10 +270,13 @@ final class ReviewEditViewModel: ObservableObject {
         return .unselected
     }
 
-    func save() {
+    func save() -> Bool {
+        lastSaveResult = nil
         guard canSave else {
             saveMessage = artistValidationMessage
-            return
+            let message = artistValidationMessage ?? "Save failed: validation error."
+            lastSaveResult = .failed(message: message)
+            return false
         }
 
         let item = RecordItem(
@@ -291,14 +300,21 @@ final class ReviewEditViewModel: ObservableObject {
 
         do {
             try repository.save(item)
+            let destination = item.unresolved ? "Unresolved" : "Saved"
+            print("ReviewEditViewModel.save: persisted id=\(item.id.uuidString) destination=\(destination)")
             if try repository.fetch(id: item.id) != nil {
-                let destination = item.unresolved ? "Unresolved" : "Saved"
                 saveMessage = "Saved locally to \(destination)"
+                lastSaveResult = item.unresolved ? .savedToUnresolved : .savedToSaved
+                return true
             } else {
                 saveMessage = "Save failed: record was not found after save."
+                lastSaveResult = .failed(message: saveMessage ?? "Save failed.")
+                return false
             }
         } catch {
             saveMessage = "Save failed: \(error.localizedDescription)"
+            lastSaveResult = .failed(message: saveMessage ?? "Save failed.")
+            return false
         }
     }
 
@@ -448,7 +464,8 @@ final class ReviewEditViewModel: ObservableObject {
 
     private static func isFilteredNoiseCandidate(_ text: String) -> Bool {
         let normalized = text.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-        return ["RPM", "STEREO", "MONO"].contains(normalized)
+        let blockedTokens = ["RPM", "STEREO", "MONO", "SIDE", "MADE IN JAPAN", "JASRAC", "45 RPM", "33 RPM"]
+        return blockedTokens.contains { normalized.contains($0) }
     }
 
     private static func containsKanaOrKanji(_ text: String) -> Bool {
