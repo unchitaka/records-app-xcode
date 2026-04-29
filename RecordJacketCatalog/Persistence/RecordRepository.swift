@@ -57,6 +57,10 @@ final class CoreDataRecordRepository: RecordRepository {
                 entity.setValue(item.unresolved, forKey: "unresolved")
                 entity.setValue(try encode(item.tags), forKey: "tags")
 
+                print("CoreDataRecordRepository.save: id=\(item.id.uuidString)")
+                print("CoreDataRecordRepository.save: destination=\(item.unresolved ? "Unresolved" : "Saved")")
+                print("CoreDataRecordRepository.save: artist=\(item.editableFields.artist)")
+                print("CoreDataRecordRepository.save: context hasChanges before save=\(context.hasChanges)")
                 if context.hasChanges {
                     try context.save()
                     context.processPendingChanges()
