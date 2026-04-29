@@ -11,18 +11,7 @@ struct ArtistRecordsListView: View {
                 RecordDetailView(record: item)
             } label: {
                 HStack(spacing: 12) {
-                    if let image = UIImage(contentsOfFile: item.preferredImagePath) {
-                        Image(uiImage: image)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 52, height: 52)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                    } else {
-                        Image(systemName: "photo")
-                            .frame(width: 52, height: 52)
-                            .background(.thinMaterial)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                    }
+                    RecordThumbnailView(imagePaths: item.candidateImagePaths, size: 52)
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text(item.editableFields.title.isEmpty ? "(Untitled)" : item.editableFields.title)
@@ -40,5 +29,38 @@ struct ArtistRecordsListView: View {
             }
         }
         .navigationTitle(artistName)
+    }
+}
+
+private struct RecordThumbnailView: View {
+    let imagePaths: [String]
+    let size: CGFloat
+
+    var body: some View {
+        Group {
+            if let image = loadImage() {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Image(systemName: "photo")
+                    .resizable()
+                    .scaledToFit()
+                    .padding(10)
+                    .foregroundStyle(.secondary)
+                    .background(.thinMaterial)
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    private func loadImage() -> UIImage? {
+        for path in imagePaths {
+            if let image = UIImage(contentsOfFile: path) {
+                return image
+            }
+        }
+        return nil
     }
 }

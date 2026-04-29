@@ -135,8 +135,7 @@ struct ReviewEditView: View {
                     .disabled(viewModel.isConfirmingCandidate || viewModel.selectedCandidate == nil)
 
                     Button("Save as unresolved") {
-                        viewModel.saveAsUnresolved()
-                        if viewModel.saveMessage?.hasPrefix("Saved locally to") == true {
+                        if viewModel.saveAsUnresolved() {
                             onSaved()
                         }
                     }
@@ -217,8 +216,7 @@ struct ReviewEditView: View {
 
             Section {
                 Button("Finalize / Save") {
-                    viewModel.save()
-                    if viewModel.saveMessage?.hasPrefix("Saved locally to") == true {
+                    if viewModel.save() {
                         onSaved()
                     }
                 }
@@ -233,6 +231,15 @@ struct ReviewEditView: View {
             if let message = viewModel.saveMessage {
                 Text(message)
                     .foregroundStyle(viewModel.canSave ? Color.secondary : Color.red)
+            }
+
+            if viewModel.stage == .lookup {
+                Section("Save Destination") {
+                    let destination = viewModel.session.unresolved ? "Unresolved" : "Saved"
+                    Text("Current destination: \(destination)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         .navigationTitle("Review & Edit")
