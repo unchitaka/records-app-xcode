@@ -122,17 +122,6 @@ struct ReviewEditView: View {
                         Text(lookupError).foregroundStyle(.red)
                     }
 
-                    ForEach(viewModel.session.candidates.prefix(3), id: \.id) { candidate in
-                        DiscogsCandidateRow(
-                            candidate: candidate,
-                            isSelected: viewModel.session.selectedCandidateID == candidate.id
-                        )
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            viewModel.selectCandidate(candidate)
-                        }
-                    }
-
                     Button(
                         viewModel.isConfirmingCandidate
                         ? "Confirming..."
@@ -144,7 +133,10 @@ struct ReviewEditView: View {
                     .disabled(viewModel.isConfirmingCandidate || viewModel.selectedCandidate == nil)
 
                     Button("Save as unresolved") {
-                        viewModel.markUnresolved()
+                        viewModel.saveAsUnresolved()
+                        if viewModel.saveMessage == "Saved locally" {
+                            onSaved()
+                        }
                     }
                 }
 
@@ -231,6 +223,10 @@ struct ReviewEditView: View {
     @ViewBuilder
     private func editableRow(title: String, text: Binding<String>, clearMode: OCRSelectionMode) -> some View {
         VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundStyle(.secondary)
             TextField(title, text: text)
             Button("Clear OCR selection") {
                 viewModel.clearSelection(for: clearMode)
