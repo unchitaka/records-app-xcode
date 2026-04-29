@@ -268,9 +268,19 @@ final class ReviewEditViewModel: ObservableObject {
     private func persist(unresolved: Bool) -> Bool {
         lastSaveResult = nil
         session.unresolved = unresolved
-        if session.fields.artist.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        session.fields.title = session.fields.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        session.fields.artist = session.fields.artist.trimmingCharacters(in: .whitespacesAndNewlines)
+        session.fields.catalogNumber = session.fields.catalogNumber.trimmingCharacters(in: .whitespacesAndNewlines)
+        session.fields.label = session.fields.label.trimmingCharacters(in: .whitespacesAndNewlines)
+        session.fields.year = session.fields.year.trimmingCharacters(in: .whitespacesAndNewlines)
+        session.tags = session.tags
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+
+        if session.fields.artist.isEmpty {
             session.fields.artist = "Unknown Artist"
         }
+
         let item = RecordItem(
             id: session.id,
             imagePath: session.imagePath,
@@ -292,29 +302,32 @@ final class ReviewEditViewModel: ObservableObject {
 
         do {
             let destination = unresolved ? "Unresolved" : "Saved"
-            print("ReviewEditViewModel.persist: id=\(item.id.uuidString)")
-            print("ReviewEditViewModel.persist: destination=\(destination)")
-            print("ReviewEditViewModel.persist: artist=\(item.editableFields.artist)")
+            print("ReviewEditViewModel.persist: id=\(item.id.uuidString), unresolved=\(item.unresolved)")
             try repository.save(item)
-            let fetchedByID = try repository.fetch(id: item.id) != nil
-            print("ReviewEditViewModel.persist: fetch(id:) verification result=\(fetchedByID)")
-            let fetchedInDestination = try repository
-                .fetchAll(unresolvedOnly: unresolved)
-                .contains(where: { $0.id == item.id })
-            print("ReviewEditViewModel.persist: fetchAll destination verification result=\(fetchedInDestination)")
 
-            if fetchedByID && fetchedInDestination {
-                saveMessage = "Saved locally to \(destination)"
+            let fetchedByID = try repository.fetch(id: item.id)
+            let fetchedByIDMatches = fetchedByID?.id == item.id
+            print("ReviewEditViewModel.persist: fetch(id:) failed=\(!fetchedByIDMatches)")
+
+            let destinationItems = try repository.fetchAll(unresolvedOnly: item.unresolved)
+            let fetchedInDestination = destinationItems.contains(where: { $0.id == item.id })
+            print("ReviewEditViewModel.persist: fetchAll(unresolvedOnly: \(item.unresolved)) failed=\(!fetchedInDestination), count=\(destinationItems.count)")
+
+            if fetchedByIDMatches && fetchedInDestination {
+                saveMessage = "Saved locally to \(destination)."
                 lastSaveResult = unresolved ? .savedToUnresolved : .savedToSaved
+                print("ReviewEditViewModel.persist: verified success id=\(item.id.uuidString), unresolved=\(item.unresolved)")
                 return true
-            } else {
-                saveMessage = "Save failed: post-save verification failed."
-                lastSaveResult = .failed(message: saveMessage ?? "Save failed.")
-                return false
             }
+
+            saveMessage = "Save failed: verification did not confirm saved record."
+            lastSaveResult = .failed(message: saveMessage ?? "Save failed.")
+            print("ReviewEditViewModel.persist: verification failed id=\(item.id.uuidString), unresolved=\(item.unresolved), fetchID=\(fetchedByIDMatches), fetchAll=\(fetchedInDestination)")
+            return false
         } catch {
             saveMessage = "Save failed: \(error.localizedDescription)"
             lastSaveResult = .failed(message: saveMessage ?? "Save failed.")
+            print("ReviewEditViewModel.persist: save threw error id=\(item.id.uuidString), unresolved=\(item.unresolved), error=\(error.localizedDescription)")
             return false
         }
     }

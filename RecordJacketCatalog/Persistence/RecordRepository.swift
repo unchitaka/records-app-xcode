@@ -22,6 +22,7 @@ final class CoreDataRecordRepository: RecordRepository {
 
     func save(_ item: RecordItem) throws {
         logger.info("Saving record \(item.id)")
+        print("CoreDataRecordRepository.save: begin id=\(item.id.uuidString), unresolved=\(item.unresolved)")
         let context = stack.container.viewContext
 
         var saveError: Error?
@@ -31,11 +32,20 @@ final class CoreDataRecordRepository: RecordRepository {
                 request.fetchLimit = 1
                 request.predicate = NSPredicate(format: "id == %@", item.id as CVarArg)
 
-                let entity = try context.fetch(request).first
-                    ?? NSManagedObject(
-                        entity: NSEntityDescription.entity(forEntityName: "StoredRecord", in: context)!,
-                        insertInto: context
-                    )
+                let existingEntity = try context.fetch(request).first
+                guard let entityDescription = NSEntityDescription.entity(forEntityName: "StoredRecord", in: context) else {
+                    throw NSError(domain: "CoreDataRecordRepository", code: 1001, userInfo: [
+                        NSLocalizedDescriptionKey: "StoredRecord entity not found in managed object model."
+                    ])
+                }
+                let entity: NSManagedObject
+                if let existingEntity {
+                    entity = existingEntity
+                    print("CoreDataRecordRepository.save: entity existing for id=\(item.id.uuidString)")
+                } else {
+                    entity = NSManagedObject(entity: entityDescription, insertInto: context)
+                    print("CoreDataRecordRepository.save: entity new for id=\(item.id.uuidString)")
+                }
 
                 entity.setValue(item.id, forKey: "id")
                 entity.setValue(item.createdAt, forKey: "createdAt")
@@ -63,7 +73,10 @@ final class CoreDataRecordRepository: RecordRepository {
                 print("CoreDataRecordRepository.save: context hasChanges before save=\(context.hasChanges)")
                 if context.hasChanges {
                     try context.save()
+                    print("CoreDataRecordRepository.save: context.save() succeeded id=\(item.id.uuidString)")
                     context.processPendingChanges()
+                } else {
+                    print("CoreDataRecordRepository.save: no changes to save id=\(item.id.uuidString)")
                 }
             } catch {
                 saveError = error
@@ -74,7 +87,11 @@ final class CoreDataRecordRepository: RecordRepository {
             throw saveError
         }
 
-        if try fetch(id: item.id) != nil {
+        let fetchedByID = try fetch(id: item.id)
+        print("CoreDataRecordRepository.save: post-save fetch(id:) found=\(fetchedByID != nil) id=\(item.id.uuidString)")
+        let destinationItems = try fetchAll(unresolvedOnly: item.unresolved)
+        print("CoreDataRecordRepository.save: post-save fetchAll(unresolvedOnly: \(item.unresolved)) count=\(destinationItems.count)")
+        if fetchedByID != nil {
             NotificationCenter.default.post(name: .recordRepositoryDidChange, object: nil)
         } else {
             logger.error("Save verification failed for id=\(item.id.uuidString); change notification suppressed.")
@@ -92,7 +109,9 @@ final class CoreDataRecordRepository: RecordRepository {
 
         request.sortDescriptors = [NSSortDescriptor(key: "updatedAt", ascending: false)]
 
-        return try context.fetch(request).compactMap(mapManagedObject)
+        let records = try context.fetch(request).compactMap(mapManagedObject)
+        print("CoreDataRecordRepository.fetchAll: unresolvedOnly=\(unresolvedOnly), count=\(records.count)")
+        return records
     }
 
     func fetch(id: UUID) throws -> RecordItem? {
@@ -101,7 +120,9 @@ final class CoreDataRecordRepository: RecordRepository {
         request.fetchLimit = 1
         request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
 
-        return try context.fetch(request).first.flatMap(mapManagedObject)
+        let result = try context.fetch(request).first.flatMap(mapManagedObject)
+        print("CoreDataRecordRepository.fetch: id=\(id.uuidString), found=\(result != nil)")
+        return result
     }
 
     private func encode<T: Codable>(_ value: T) throws -> Data {
