@@ -75,13 +75,9 @@ final class ReviewEditViewModel: ObservableObject {
         session.fields.artist.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    var canSave: Bool {
-        !trimmedArtist.isEmpty
-    }
+    var canSave: Bool { true }
 
-    var artistValidationMessage: String? {
-        canSave ? nil : "Artist is required before final save."
-    }
+    var artistValidationMessage: String? { nil }
 
     var rankedOCRCandidates: [RankedOCRCandidate] {
         session.ocrBoxes
@@ -186,10 +182,7 @@ final class ReviewEditViewModel: ObservableObject {
         session.confirmedDiscogsRelease = nil
     }
 
-    func saveAsUnresolved() -> Bool {
-        markUnresolved()
-        return save()
-    }
+    func saveAsUnresolved() -> Bool { persist(unresolved: true) }
 
     func toggleSelection(for box: OCRTextBox) {
         switch selectionMode {
@@ -270,15 +263,14 @@ final class ReviewEditViewModel: ObservableObject {
         return .unselected
     }
 
-    func save() -> Bool {
-        lastSaveResult = nil
-        guard canSave else {
-            saveMessage = artistValidationMessage
-            let message = artistValidationMessage ?? "Save failed: validation error."
-            lastSaveResult = .failed(message: message)
-            return false
-        }
+    func save() -> Bool { persist(unresolved: false) }
 
+    private func persist(unresolved: Bool) -> Bool {
+        lastSaveResult = nil
+        session.unresolved = unresolved
+        if session.fields.artist.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            session.fields.artist = "Unknown Artist"
+        }
         let item = RecordItem(
             id: session.id,
             imagePath: session.imagePath,
@@ -294,20 +286,29 @@ final class ReviewEditViewModel: ObservableObject {
             selectedDiscogsMatch: session.selectedDiscogsMatch,
             confirmedDiscogsSummary: session.confirmedDiscogsSummary,
             confirmedDiscogsRelease: session.confirmedDiscogsRelease,
-            unresolved: session.unresolved,
+            unresolved: unresolved,
             tags: session.tags
         )
 
         do {
+            let destination = unresolved ? "Unresolved" : "Saved"
+            print("ReviewEditViewModel.persist: id=\(item.id.uuidString)")
+            print("ReviewEditViewModel.persist: destination=\(destination)")
+            print("ReviewEditViewModel.persist: artist=\(item.editableFields.artist)")
             try repository.save(item)
-            let destination = item.unresolved ? "Unresolved" : "Saved"
-            print("ReviewEditViewModel.save: persisted id=\(item.id.uuidString) destination=\(destination)")
-            if try repository.fetch(id: item.id) != nil {
+            let fetchedByID = try repository.fetch(id: item.id) != nil
+            print("ReviewEditViewModel.persist: fetch(id:) verification result=\(fetchedByID)")
+            let fetchedInDestination = try repository
+                .fetchAll(unresolvedOnly: unresolved)
+                .contains(where: { $0.id == item.id })
+            print("ReviewEditViewModel.persist: fetchAll destination verification result=\(fetchedInDestination)")
+
+            if fetchedByID && fetchedInDestination {
                 saveMessage = "Saved locally to \(destination)"
-                lastSaveResult = item.unresolved ? .savedToUnresolved : .savedToSaved
+                lastSaveResult = unresolved ? .savedToUnresolved : .savedToSaved
                 return true
             } else {
-                saveMessage = "Save failed: record was not found after save."
+                saveMessage = "Save failed: post-save verification failed."
                 lastSaveResult = .failed(message: saveMessage ?? "Save failed.")
                 return false
             }
