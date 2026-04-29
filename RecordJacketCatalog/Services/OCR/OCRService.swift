@@ -143,8 +143,15 @@ final class VisionOCRService: OCRService {
         let kind: RankedKind
     }
 
+    private let junkKeywords = ["RPM", "STEREO", "MONO"]
+
     private func rankCandidates(from boxes: [OCRTextBox]) -> [RankedBox] {
-        boxes.enumerated()
+        boxes
+            .filter { box in
+                let text = box.text.uppercased()
+                return !junkKeywords.contains { text.contains($0) }
+            }
+            .enumerated()
             .map { index, box in
                 let text = box.text.trimmingCharacters(in: .whitespacesAndNewlines)
                 let hasDigits = text.rangeOfCharacter(from: .decimalDigits) != nil

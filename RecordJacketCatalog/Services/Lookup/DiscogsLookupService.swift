@@ -57,6 +57,7 @@ final class LiveDiscogsLookupService: DiscogsLookupService {
         }
 
         try validateToken()
+        logger.info("Discogs token configured=\(DiscogsConfig.isConfigured)")
 
         let strategies = searchStrategies(for: normalized)
 
@@ -105,7 +106,8 @@ final class LiveDiscogsLookupService: DiscogsLookupService {
         }
 
         logger.info("Discogs release detail fetch id=\(candidate.id)")
-        let data = try await performRequest(url: url)
+        logger.info("Discogs request context=release_details params=id=\(candidate.id)")
+        let data = try await performRequest(url: url, context: "release_details")
 
         let decoded: DiscogsReleaseResponse
         do {
@@ -163,17 +165,17 @@ final class LiveDiscogsLookupService: DiscogsLookupService {
         if !query.catalogNumber.isEmpty {
             strategies.append(SearchStrategy(name: "catalog_only", title: nil, artist: nil, catalog: query.catalogNumber))
         }
-        if !query.title.isEmpty {
-            strategies.append(SearchStrategy(name: "title_only", title: query.title, artist: nil, catalog: nil))
-        }
-        if !query.title.isEmpty, !query.catalogNumber.isEmpty {
-            strategies.append(SearchStrategy(name: "title_catalog", title: query.title, artist: nil, catalog: query.catalogNumber))
+        if !query.title.isEmpty, !query.artist.isEmpty, !query.catalogNumber.isEmpty {
+            strategies.append(SearchStrategy(name: "artist_title_catalog", title: query.title, artist: query.artist, catalog: query.catalogNumber))
         }
         if !query.title.isEmpty, !query.artist.isEmpty {
             strategies.append(SearchStrategy(name: "title_artist", title: query.title, artist: query.artist, catalog: nil))
         }
-        if !query.artist.isEmpty, !query.title.isEmpty, !query.catalogNumber.isEmpty {
-            strategies.append(SearchStrategy(name: "artist_title_catalog", title: query.title, artist: query.artist, catalog: query.catalogNumber))
+        if !query.title.isEmpty, !query.catalogNumber.isEmpty {
+            strategies.append(SearchStrategy(name: "title_catalog", title: query.title, artist: nil, catalog: query.catalogNumber))
+        }
+        if !query.title.isEmpty {
+            strategies.append(SearchStrategy(name: "title_only", title: query.title, artist: nil, catalog: nil))
         }
 
         return strategies
@@ -196,7 +198,13 @@ final class LiveDiscogsLookupService: DiscogsLookupService {
             throw DiscogsLookupError.invalidResponse
         }
 
-        let data = try await performRequest(url: url)
+        let sanitizedQuery = queryItems
+            .filter { $0.name != "token" }
+            .map { "\($0.name)=\($0.value ?? "")" }
+            .joined(separator: "&")
+        logger.info("Discogs request strategy=\(strategy.name) params=\(sanitizedQuery)")
+
+        let data = try await performRequest(url: url, context: "search:\(strategy.name)")
 
         let decoded: DiscogsSearchResponse
         do {
@@ -244,25 +252,36 @@ final class LiveDiscogsLookupService: DiscogsLookupService {
         return (artist.isEmpty ? nil : artist, title.isEmpty ? clean : title)
     }
 
-    private func performRequest(url: URL) async throws -> Data {
+    private func performRequest(url: URL, context: String) async throws -> Data {
         do {
             let (data, response) = try await URLSession.shared.data(from: url)
             guard let http = response as? HTTPURLResponse else {
+                logger.error("Discogs invalid response context=\(context)")
                 throw DiscogsLookupError.invalidResponse
             }
 
+            logger.info("Discogs HTTP context=\(context) status=\(http.statusCode)")
             guard http.statusCode == 200 else {
-                if http.statusCode == 429 {
+                switch http.statusCode {
+                case 401:
+                    throw DiscogsLookupError.unauthorized
+                case 403:
+                    throw DiscogsLookupError.forbidden
+                case 422:
+                    throw DiscogsLookupError.malformedQuery
+                case 429:
                     throw DiscogsLookupError.rateLimited
+                default:
+                    throw DiscogsLookupError.httpStatus(http.statusCode)
                 }
-                throw DiscogsLookupError.httpStatus(http.statusCode)
             }
 
             return data
         } catch let error as DiscogsLookupError {
+            logger.error("Discogs request failure context=\(context) reason=\(error)")
             throw error
         } catch {
-            logger.error("Discogs network failure: \(error.localizedDescription)")
+            logger.error("Discogs network failure context=\(context): \(error.localizedDescription)")
             throw DiscogsLookupError.networkFailure(error.localizedDescription)
         }
     }
@@ -274,6 +293,9 @@ enum DiscogsLookupError: LocalizedError, Equatable {
     case zeroResults
     case invalidResponse
     case decodingFailed
+    case unauthorized
+    case forbidden
+    case malformedQuery
     case httpStatus(Int)
     case rateLimited
     case networkFailure(String)
@@ -290,6 +312,12 @@ enum DiscogsLookupError: LocalizedError, Equatable {
             return "Discogs returned an unexpected response format. Retry in a moment."
         case .decodingFailed:
             return "Discogs data could not be parsed. Retry; if it persists, refine your query."
+        case .unauthorized:
+            return "Discogs rejected the token (HTTP 401). Verify DISCOGS_TOKEN and retry."
+        case .forbidden:
+            return "Discogs denied access (HTTP 403). Check token scopes/limits and retry."
+        case .malformedQuery:
+            return "Discogs rejected the query format. Edit fields and retry."
         case .httpStatus(let code):
             return "Discogs request failed (HTTP \(code)). Verify token and retry."
         case .rateLimited:

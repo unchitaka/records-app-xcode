@@ -15,7 +15,7 @@ struct SavedRecordsListView: View {
     }
 
     private var unresolvedList: some View {
-        List(viewModel.items) { item in
+        List(viewModel.filteredUnresolvedItems) { item in
             NavigationLink {
                 ReviewEditView(
                     viewModel: .init(
@@ -46,10 +46,11 @@ struct SavedRecordsListView: View {
             }
         }
         .overlay {
-            if viewModel.items.isEmpty {
+            if viewModel.filteredUnresolvedItems.isEmpty {
                 ContentUnavailableView("No unresolved records", systemImage: "tray")
             }
         }
+        .searchable(text: $viewModel.unresolvedSearchText, prompt: "Search unresolved artists")
         .navigationTitle("Unresolved")
         .onAppear { viewModel.load() }
     }
