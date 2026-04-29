@@ -87,11 +87,12 @@ final class SavedRecordsListViewModel: ObservableObject {
         var displayNameByKey: [String: String] = [:]
 
         for record in records {
-            let key = normalizedArtistKey(record.artistIndex)
+            let display = primaryArtist(from: record)
+            let key = normalizedArtistKey(display)
             grouped[key, default: []].append(record)
 
             if displayNameByKey[key] == nil {
-                displayNameByKey[key] = primaryArtist(from: record)
+                displayNameByKey[key] = display
             }
         }
 
@@ -112,8 +113,14 @@ final class SavedRecordsListViewModel: ObservableObject {
         let explicit = record.editableFields.artist.trimmingCharacters(in: .whitespacesAndNewlines)
         if !explicit.isEmpty { return explicit }
 
+        let indexArtist = record.artistIndex.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !indexArtist.isEmpty, indexArtist != "unknown artist" { return indexArtist }
+
         let discogs = record.confirmedDiscogsSummary?.artist?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         if !discogs.isEmpty { return discogs }
+
+        let selectedDiscogs = record.selectedDiscogsMatch?.artist?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !selectedDiscogs.isEmpty { return selectedDiscogs }
 
         return "Unknown Artist"
     }

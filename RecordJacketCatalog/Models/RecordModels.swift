@@ -223,7 +223,41 @@ private extension String {
 
 extension RecordItem {
     var preferredImagePath: String {
-        let cropped = correctedCropPath?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        return cropped.isEmpty ? imagePath : cropped
+        validPreferredImagePath ?? imagePath
+    }
+
+    var validPreferredImagePath: String? {
+        candidateImagePaths.first
+    }
+
+    var candidateImagePaths: [String] {
+        Self.resolvedExistingImagePaths(correctedCropPath: correctedCropPath, imagePath: imagePath)
+    }
+
+    static func resolvedExistingImagePaths(correctedCropPath: String?, imagePath: String) -> [String] {
+        let candidates = [correctedCropPath, imagePath]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        var resolved: [String] = []
+        for candidate in candidates {
+            if let existing = resolveExistingPath(candidate), !resolved.contains(existing) {
+                resolved.append(existing)
+            }
+        }
+        return resolved
+    }
+
+    private static func resolveExistingPath(_ candidate: String) -> String? {
+        let fm = FileManager.default
+        if fm.fileExists(atPath: candidate) {
+            return candidate
+        }
+
+        let fileName = URL(fileURLWithPath: candidate).lastPathComponent
+        guard !fileName.isEmpty else { return nil }
+        let docs = fm.urls(for: .documentDirectory, in: .userDomainMask).first
+        guard let docs else { return nil }
+        let relativePath = docs.appendingPathComponent(fileName).path
+        return fm.fileExists(atPath: relativePath) ? relativePath : nil
     }
 }
