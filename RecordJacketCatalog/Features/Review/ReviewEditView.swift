@@ -4,6 +4,7 @@ import UIKit
 struct ReviewEditView: View {
     @StateObject var viewModel: ReviewEditViewModel
     let onSaved: () -> Void
+    let onRestart: () -> Void
 
     @State private var newTag = ""
     @State private var editingBox: OCRTextBox?
@@ -195,6 +196,10 @@ struct ReviewEditView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(!viewModel.canSave)
+
+                Button("Restart / Recapture", role: .destructive) {
+                    onRestart()
+                }
             }
 
             if let message = viewModel.saveMessage {

@@ -4,6 +4,7 @@
         <attribute name="confirmedDiscogsRelease" optional="YES" attributeType="Binary"/>
         <attribute name="confirmedDiscogsSummary" optional="YES" attributeType="Binary"/>
         <attribute name="correctedCropPath" optional="YES" attributeType="String"/>
+        <attribute name="artistIndex" optional="YES" attributeType="String" indexed="YES"/>
         <attribute name="createdAt" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="editableFields" attributeType="Binary"/>
         <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>

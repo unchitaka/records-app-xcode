@@ -151,6 +151,7 @@ struct RecordItem: Codable, Equatable, Identifiable {
     var selectedArtistBoxIDs: [UUID]
     var selectedCatalogBoxIDs: [UUID]
     var editableFields: EditableFields
+    var artistIndex: String
     var queryHistory: [LookupQueryLog]
     var latestCandidates: [DiscogsCandidate]
     var selectedDiscogsMatch: DiscogsCandidate?
@@ -171,6 +172,7 @@ struct RecordItem: Codable, Equatable, Identifiable {
         selectedArtistBoxIDs: [UUID] = [],
         selectedCatalogBoxIDs: [UUID] = [],
         editableFields: EditableFields,
+        artistIndex: String? = nil,
         queryHistory: [LookupQueryLog] = [],
         latestCandidates: [DiscogsCandidate] = [],
         selectedDiscogsMatch: DiscogsCandidate? = nil,
@@ -190,6 +192,10 @@ struct RecordItem: Codable, Equatable, Identifiable {
         self.selectedArtistBoxIDs = selectedArtistBoxIDs
         self.selectedCatalogBoxIDs = selectedCatalogBoxIDs
         self.editableFields = editableFields
+        self.artistIndex = RecordItem.normalizedArtistIndex(
+            artistIndex ?? editableFields.artist,
+            fallbackArtist: selectedDiscogsMatch?.artist ?? confirmedDiscogsSummary?.artist
+        )
         self.queryHistory = queryHistory
         self.latestCandidates = latestCandidates
         self.selectedDiscogsMatch = selectedDiscogsMatch
@@ -197,6 +203,21 @@ struct RecordItem: Codable, Equatable, Identifiable {
         self.confirmedDiscogsRelease = confirmedDiscogsRelease
         self.unresolved = unresolved
         self.tags = tags
+    }
+
+    static func normalizedArtistIndex(_ value: String, fallbackArtist: String? = nil) -> String {
+        let preferred = value.trimmedIfNotEmpty ?? fallbackArtist?.trimmedIfNotEmpty ?? "Unknown Artist"
+        let folded = preferred.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+        let collapsed = folded.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return collapsed.isEmpty ? "unknown artist" : collapsed
+    }
+}
+
+private extension String {
+    var trimmedIfNotEmpty: String? {
+        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
     }
 }
 

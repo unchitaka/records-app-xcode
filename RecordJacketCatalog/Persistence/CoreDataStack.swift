@@ -16,6 +16,10 @@ final class CoreDataStack {
         }
 
         container = NSPersistentContainer(name: "RecordModel", managedObjectModel: managedObjectModel)
+        if let description = container.persistentStoreDescriptions.first {
+            description.shouldInferMappingModelAutomatically = true
+            description.shouldMigrateStoreAutomatically = true
+        }
 
         container.loadPersistentStores { _, error in
             if let error {
