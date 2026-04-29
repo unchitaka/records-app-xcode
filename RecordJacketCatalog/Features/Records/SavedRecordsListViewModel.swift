@@ -14,6 +14,7 @@ final class SavedRecordsListViewModel: ObservableObject {
     @Published var items: [RecordItem] = []
     @Published var error: String?
     @Published var artistSearchText = ""
+    @Published var unresolvedSearchText = ""
     @Published private(set) var artistBuckets: [ArtistBucket] = []
 
     let repository: RecordRepository
@@ -46,6 +47,16 @@ final class SavedRecordsListViewModel: ObservableObject {
             }
         } catch {
             self.error = "Failed to load records"
+        }
+    }
+
+    var filteredUnresolvedItems: [RecordItem] {
+        let query = unresolvedSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return items }
+
+        return items.filter { item in
+            item.editableFields.artist.localizedCaseInsensitiveContains(query)
+            || item.artistIndex.localizedCaseInsensitiveContains(query)
         }
     }
 

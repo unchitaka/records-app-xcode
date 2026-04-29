@@ -59,25 +59,27 @@ struct ReviewEditView: View {
                 }
                 .pickerStyle(.segmented)
 
-                if viewModel.session.ocrBoxes.isEmpty {
-                    Text("No OCR items recognized.")
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(viewModel.rankedOCRCandidates) { candidate in
-                        Button {
-                            viewModel.toggleSelection(for: candidate.box)
-                        } label: {
-                            OCRListRow(
-                                text: candidate.box.text,
-                                confidence: candidate.box.confidence,
-                                state: viewModel.selectionState(for: candidate.box.id),
-                                likelyType: candidate.likelyType,
-                                hint: candidate.hint
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        .onLongPressGesture {
-                            beginEditing(candidate.box)
+                if viewModel.stage != .lookup {
+                    if viewModel.session.ocrBoxes.isEmpty {
+                        Text("No OCR items recognized.")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(viewModel.rankedOCRCandidates) { candidate in
+                            Button {
+                                viewModel.toggleSelection(for: candidate.box)
+                            } label: {
+                                OCRListRow(
+                                    text: candidate.box.text,
+                                    confidence: candidate.box.confidence,
+                                    state: viewModel.selectionState(for: candidate.box.id),
+                                    likelyType: candidate.likelyType,
+                                    hint: candidate.hint
+                                )
+                            }
+                            .buttonStyle(.plain)
+                            .onLongPressGesture {
+                                beginEditing(candidate.box)
+                            }
                         }
                     }
                 }
