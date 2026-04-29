@@ -79,6 +79,7 @@ final class ReviewEditViewModel: ObservableObject {
 
     var rankedOCRCandidates: [RankedOCRCandidate] {
         session.ocrBoxes
+            .filter { !Self.isFilteredNoiseCandidate($0.text) }
             .enumerated()
             .map { index, box in
                 let rank = Self.rank(box: box, originalIndex: index)
@@ -110,7 +111,7 @@ final class ReviewEditViewModel: ObservableObject {
         do {
             let candidates = try await discogs.searchCandidates(fields: session.fields)
             session.candidates = Array(candidates.prefix(3))
-            session.selectedCandidateID = nil
+            session.selectedCandidateID = session.candidates.first?.id
             session.selectedDiscogsMatch = nil
             session.confirmedDiscogsSummary = nil
             session.confirmedDiscogsRelease = nil
@@ -137,6 +138,7 @@ final class ReviewEditViewModel: ObservableObject {
 
         if let candidate = await coverMatcher.findCandidate(using: imageData, fields: session.fields) {
             session.candidates = [candidate]
+            session.selectedCandidateID = candidate.id
             lookupError = nil
         }
     }
@@ -269,6 +271,7 @@ final class ReviewEditViewModel: ObservableObject {
         }
 
         let item = RecordItem(
+            id: session.id,
             imagePath: session.imagePath,
             correctedCropPath: session.correctedCropPath,
             rawOCRText: session.rawOCRText,
@@ -288,7 +291,12 @@ final class ReviewEditViewModel: ObservableObject {
 
         do {
             try repository.save(item)
-            saveMessage = "Saved locally"
+            if try repository.fetch(id: item.id) != nil {
+                let destination = item.unresolved ? "Unresolved" : "Saved"
+                saveMessage = "Saved locally to \(destination)"
+            } else {
+                saveMessage = "Save failed: record was not found after save."
+            }
         } catch {
             saveMessage = "Save failed: \(error.localizedDescription)"
         }
@@ -392,33 +400,41 @@ final class ReviewEditViewModel: ObservableObject {
     private func applyInitialBestSelectionsIfNeeded() {
         guard !session.ocrBoxes.isEmpty else { return }
 
-        if !hasUserModifiedTitle,
-           session.selectedTitleBoxIDs.isEmpty,
-           session.fields.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-           let titleBox = bestCandidate(for: .title) {
-            session.selectedTitleBoxIDs = [titleBox.id]
-            session.fields.title = titleBox.text
+        var usedBoxIDs = Set<UUID>()
+        if !hasUserModifiedCatalog,
+           session.selectedCatalogBoxIDs.isEmpty,
+           session.fields.catalogNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+           let catalogBox = bestCandidate(for: .catalog, excluding: usedBoxIDs) {
+            session.selectedCatalogBoxIDs = [catalogBox.id]
+            session.fields.catalogNumber = catalogBox.text
+            usedBoxIDs.insert(catalogBox.id)
+        } else {
+            usedBoxIDs.formUnion(session.selectedCatalogBoxIDs)
         }
 
         if !hasUserModifiedArtist,
            session.selectedArtistBoxIDs.isEmpty,
            session.fields.artist.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-           let artistBox = bestCandidate(for: .artist) {
+           let artistBox = bestCandidate(for: .artist, excluding: usedBoxIDs) {
             session.selectedArtistBoxIDs = [artistBox.id]
             session.fields.artist = artistBox.text
+            usedBoxIDs.insert(artistBox.id)
+        } else {
+            usedBoxIDs.formUnion(session.selectedArtistBoxIDs)
         }
 
-        if !hasUserModifiedCatalog,
-           session.selectedCatalogBoxIDs.isEmpty,
-           session.fields.catalogNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-           let catalogBox = bestCandidate(for: .catalog) {
-            session.selectedCatalogBoxIDs = [catalogBox.id]
-            session.fields.catalogNumber = catalogBox.text
+        if !hasUserModifiedTitle,
+           session.selectedTitleBoxIDs.isEmpty,
+           session.fields.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+           let titleBox = bestCandidate(for: .title, excluding: usedBoxIDs) {
+            session.selectedTitleBoxIDs = [titleBox.id]
+            session.fields.title = titleBox.text
         }
     }
 
-    private func bestCandidate(for mode: OCRSelectionMode) -> OCRTextBox? {
+    private func bestCandidate(for mode: OCRSelectionMode, excluding usedBoxIDs: Set<UUID>) -> OCRTextBox? {
         rankedOCRCandidates.first(where: { candidate in
+            guard !usedBoxIDs.contains(candidate.box.id) else { return false }
             switch mode {
             case .title:
                 return candidate.likelyType == .title
@@ -428,6 +444,11 @@ final class ReviewEditViewModel: ObservableObject {
                 return candidate.likelyType == .catalog
             }
         })?.box
+    }
+
+    private static func isFilteredNoiseCandidate(_ text: String) -> Bool {
+        let normalized = text.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        return ["RPM", "STEREO", "MONO"].contains(normalized)
     }
 
     private static func containsKanaOrKanji(_ text: String) -> Bool {

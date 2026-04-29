@@ -13,6 +13,7 @@ enum OCRSelectionMode: String, CaseIterable, Codable {
 }
 
 struct ReviewSession {
+    var id: UUID
     var imagePath: String
     var correctedCropPath: String?
     var ocrInputSource: OCRImageInputSource
@@ -34,6 +35,7 @@ struct ReviewSession {
 
     static func empty(imagePath: String) -> ReviewSession {
         .init(
+            id: UUID(),
             imagePath: imagePath,
             correctedCropPath: nil,
             ocrInputSource: .unknown,
@@ -58,12 +60,16 @@ struct ReviewSession {
 
 extension ReviewSession {
     var preferredImagePath: String {
-        let cropped = correctedCropPath?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        return cropped.isEmpty ? imagePath : cropped
+        candidateImagePaths.first ?? imagePath
+    }
+
+    var candidateImagePaths: [String] {
+        RecordItem.resolvedExistingImagePaths(correctedCropPath: correctedCropPath, imagePath: imagePath)
     }
 
     init(record: RecordItem) {
         self.init(
+            id: record.id,
             imagePath: record.imagePath,
             correctedCropPath: record.correctedCropPath,
             ocrInputSource: record.correctedCropPath == nil ? .originalFallback : .correctedCrop,

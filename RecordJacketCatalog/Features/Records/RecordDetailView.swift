@@ -7,7 +7,7 @@ struct RecordDetailView: View {
     var body: some View {
         Form {
             Section("Cover") {
-                if let image = UIImage(contentsOfFile: record.preferredImagePath) {
+                if let image = loadImage() {
                     Image(uiImage: image)
                         .resizable()
                         .scaledToFit()
@@ -79,5 +79,14 @@ struct RecordDetailView: View {
             Text(value)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    private func loadImage() -> UIImage? {
+        for path in record.candidateImagePaths {
+            if let image = UIImage(contentsOfFile: path) {
+                return image
+            }
+        }
+        return nil
     }
 }

@@ -33,7 +33,7 @@ struct SavedRecordsListView: View {
                 )
             } label: {
                 HStack(spacing: 12) {
-                    RecordThumbnailView(imagePath: item.preferredImagePath, size: 52)
+                    RecordThumbnailView(imagePaths: item.candidateImagePaths, size: 52)
 
                     VStack(alignment: .leading) {
                         Text(item.editableFields.title.isEmpty ? "(Untitled)" : item.editableFields.title)
@@ -84,12 +84,12 @@ struct SavedRecordsListView: View {
 }
 
 private struct RecordThumbnailView: View {
-    let imagePath: String
+    let imagePaths: [String]
     let size: CGFloat
 
     var body: some View {
         Group {
-            if let image = UIImage(contentsOfFile: imagePath) {
+            if let image = loadImage() {
                 Image(uiImage: image)
                     .resizable()
                     .scaledToFill()
@@ -104,5 +104,14 @@ private struct RecordThumbnailView: View {
         }
         .frame(width: size, height: size)
         .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    private func loadImage() -> UIImage? {
+        for path in imagePaths {
+            if let image = UIImage(contentsOfFile: path) {
+                return image
+            }
+        }
+        return nil
     }
 }

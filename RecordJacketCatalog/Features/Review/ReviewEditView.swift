@@ -100,7 +100,7 @@ struct ReviewEditView: View {
                 }
             }
 
-            if viewModel.stage == .advanced || viewModel.stage == .lookup {
+            if viewModel.stage == .advanced {
                 Section("More fields") {
                     TextField("Label", text: $viewModel.session.fields.label)
                     TextField("Year", text: $viewModel.session.fields.year)
@@ -136,8 +136,42 @@ struct ReviewEditView: View {
 
                     Button("Save as unresolved") {
                         viewModel.saveAsUnresolved()
-                        if viewModel.saveMessage == "Saved locally" {
+                        if viewModel.saveMessage?.hasPrefix("Saved locally to") == true {
                             onSaved()
+                        }
+                    }
+                }
+
+                Section("Matches") {
+                    if viewModel.session.candidates.isEmpty {
+                        Text("No matches found.")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("\(viewModel.session.candidates.count) matches found")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        ForEach(viewModel.session.candidates) { candidate in
+                            Button {
+                                viewModel.selectCandidate(candidate)
+                            } label: {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(candidate.title)
+                                            .lineLimit(1)
+                                        Text(compactCandidateSubtitle(candidate))
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(1)
+                                    }
+                                    Spacer()
+                                    if viewModel.session.selectedCandidateID == candidate.id {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundStyle(.blue)
+                                    }
+                                }
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -184,7 +218,7 @@ struct ReviewEditView: View {
             Section {
                 Button("Finalize / Save") {
                     viewModel.save()
-                    if viewModel.saveMessage == "Saved locally" {
+                    if viewModel.saveMessage?.hasPrefix("Saved locally to") == true {
                         onSaved()
                     }
                 }
@@ -215,6 +249,12 @@ struct ReviewEditView: View {
         } message: {
             Text("Long-press lets you correct OCR text while preserving the same OCR item.")
         }
+    }
+
+    private func compactCandidateSubtitle(_ candidate: DiscogsCandidate) -> String {
+        let left = [candidate.artist, candidate.catalogNumber].compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }.joined(separator: " · ")
+        let right = [candidate.year, candidate.country].compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }.joined(separator: " · ")
+        return [left, right].filter { !$0.isEmpty }.joined(separator: " — ")
     }
 
     private func beginEditing(_ box: OCRTextBox) {
