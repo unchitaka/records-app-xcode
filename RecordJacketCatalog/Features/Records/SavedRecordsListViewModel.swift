@@ -20,10 +20,19 @@ final class SavedRecordsListViewModel: ObservableObject {
     let unresolvedOnly: Bool
 
     private var recordsByArtistKey: [String: [RecordItem]] = [:]
+    private var cancellables: Set<AnyCancellable> = []
 
     init(repository: RecordRepository, unresolvedOnly: Bool) {
         self.repository = repository
         self.unresolvedOnly = unresolvedOnly
+
+        NotificationCenter.default.publisher(for: .recordRepositoryDidChange)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.load()
+            }
+            .store(in: &cancellables)
+
         load()
     }
 
@@ -67,12 +76,11 @@ final class SavedRecordsListViewModel: ObservableObject {
         var displayNameByKey: [String: String] = [:]
 
         for record in records {
-            let name = primaryArtist(from: record)
-            let key = normalizedArtistKey(name)
-
+            let key = normalizedArtistKey(record.artistIndex)
             grouped[key, default: []].append(record)
+
             if displayNameByKey[key] == nil {
-                displayNameByKey[key] = name
+                displayNameByKey[key] = primaryArtist(from: record)
             }
         }
 
@@ -100,9 +108,6 @@ final class SavedRecordsListViewModel: ObservableObject {
     }
 
     private func normalizedArtistKey(_ value: String) -> String {
-        let folded = value.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
-        let compact = folded.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        return compact.isEmpty ? "unknown artist" : compact
+        RecordItem.normalizedArtistIndex(value)
     }
 }

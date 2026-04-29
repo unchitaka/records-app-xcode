@@ -15,10 +15,14 @@ struct CaptureFlowHostView: View {
                             repository: container.repository,
                             discogs: container.discogsService,
                             coverMatcher: container.coverImageMatcher
-                        )
-                    ) {
-                        self.session = nil
-                    }
+                        ),
+                        onSaved: {
+                            self.session = nil
+                        },
+                        onRestart: {
+                            self.session = nil
+                        }
+                    )
                 } else {
                     CaptureView(viewModel: .init(camera: container.cameraService, ocr: container.ocrService, logger: container.logger)) { created in
                         self.session = created

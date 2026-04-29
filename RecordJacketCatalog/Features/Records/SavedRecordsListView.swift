@@ -26,6 +26,9 @@ struct SavedRecordsListView: View {
                     ),
                     onSaved: {
                         viewModel.load()
+                    },
+                    onRestart: {
+                        viewModel.load()
                     }
                 )
             } label: {
