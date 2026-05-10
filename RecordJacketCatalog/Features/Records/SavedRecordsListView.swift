@@ -10,45 +10,25 @@ struct SavedRecordsListView: View {
 
     var body: some View {
         NavigationStack {
-            if viewModel.unresolvedOnly {
-                unresolvedList
-            } else {
-                artistIndexList
+            Group {
+                if viewModel.unresolvedOnly {
+                    unresolvedList
+                } else {
+                    savedArtistOrFallbackList
+                }
+            }
+            .onAppear {
+                viewModel.load()
+            }
+            .refreshable {
+                viewModel.load()
             }
         }
-        .onAppear { viewModel.load() }
     }
 
     private var unresolvedList: some View {
         List(viewModel.filteredUnresolvedItems) { item in
-            NavigationLink {
-                ReviewEditView(
-                    viewModel: .init(
-                        session: ReviewSession(record: item),
-                        repository: viewModel.repository,
-                        discogs: LiveDiscogsLookupService(logger: AppLogger(category: "RetryLookup")),
-                        coverMatcher: StubCoverImageMatchService(logger: AppLogger(category: "RetryLookupCover"))
-                    ),
-                    onSaved: {
-                        viewModel.load()
-                    },
-                    onRestart: {
-                        viewModel.load()
-                    }
-                )
-            } label: {
-                HStack(spacing: 12) {
-                    RecordThumbnailView(imagePaths: item.candidateImagePaths, size: 52)
-
-                    VStack(alignment: .leading) {
-                        Text(item.editableFields.title.isEmpty ? "(Untitled)" : item.editableFields.title)
-                            .font(.headline)
-                        Text(item.editableFields.artist)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
+            unresolvedNavigationRow(item)
         }
         .overlay {
             if viewModel.filteredUnresolvedItems.isEmpty {
@@ -59,30 +39,120 @@ struct SavedRecordsListView: View {
         .navigationTitle("Unresolved")
     }
 
-    private var artistIndexList: some View {
-        List(viewModel.filteredArtistBuckets) { bucket in
-            NavigationLink {
-                ArtistRecordsListView(
-                    artistName: bucket.displayName,
-                    records: viewModel.records(for: bucket)
-                )
-            } label: {
-                HStack {
-                    Text(bucket.displayName)
-                    Spacer()
-                    Text("\(bucket.count)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+    private var savedArtistOrFallbackList: some View {
+        Group {
+            if viewModel.shouldUseSavedFallbackList {
+                savedFallbackList
+            } else {
+                savedArtistIndexScrollList
             }
         }
         .overlay {
-            if viewModel.artistBuckets.isEmpty {
+            if viewModel.items.isEmpty {
                 ContentUnavailableView("No saved records", systemImage: "opticaldisc")
             }
         }
         .searchable(text: $viewModel.artistSearchText, prompt: "Search artists")
         .navigationTitle("Artists")
+    }
+
+    private var savedArtistIndexScrollList: some View {
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                ForEach(viewModel.filteredArtistBuckets) { bucket in
+                    NavigationLink {
+                        ArtistRecordsListView(
+                            artistName: bucket.displayName,
+                            records: viewModel.records(for: bucket)
+                        )
+                    } label: {
+                        artistBucketRow(bucket)
+                    }
+                    .buttonStyle(.plain)
+
+                    Divider()
+                        .padding(.leading, 16)
+                }
+            }
+        }
+    }
+
+    private var savedFallbackList: some View {
+        List(viewModel.filteredSavedFallbackItems) { item in
+            NavigationLink {
+                RecordDetailView(record: item)
+            } label: {
+                recordRow(item)
+            }
+        }
+    }
+
+    private func unresolvedNavigationRow(_ item: RecordItem) -> some View {
+        NavigationLink {
+            ReviewEditView(
+                viewModel: .init(
+                    session: ReviewSession(record: item),
+                    repository: viewModel.repository,
+                    discogs: LiveDiscogsLookupService(logger: AppLogger(category: "RetryLookup")),
+                    coverMatcher: StubCoverImageMatchService(logger: AppLogger(category: "RetryLookupCover"))
+                ),
+                onSaved: {
+                    viewModel.load()
+                },
+                onRestart: {
+                    viewModel.load()
+                }
+            )
+        } label: {
+            recordRow(item)
+        }
+    }
+
+    private func artistBucketRow(_ bucket: SavedRecordsListViewModel.ArtistBucket) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(bucket.displayName)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+
+                Text("\(bucket.count) record\(bucket.count == 1 ? "" : "s")")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .contentShape(Rectangle())
+    }
+
+    private func recordRow(_ item: RecordItem) -> some View {
+        HStack(spacing: 12) {
+            RecordThumbnailView(imagePaths: item.candidateImagePaths, size: 52)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.editableFields.title.isEmpty ? "(Untitled)" : item.editableFields.title)
+                    .font(.headline)
+                    .lineLimit(1)
+
+                Text(viewModel.resolvedArtistDisplayName(for: item))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+
+                if !item.editableFields.catalogNumber.isEmpty {
+                    Text(item.editableFields.catalogNumber)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+        }
     }
 }
 
