@@ -25,6 +25,11 @@
 		D6CDC21A2F931BB600CE86DC /* CameraService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6CDC2012F931BB600CE86DC /* CameraService.swift */; };
 		D6CDC21B2F931BB600CE86DC /* CaptureFlowHostView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6CDC1EF2F931BB600CE86DC /* CaptureFlowHostView.swift */; };
 		D6CDC21C2F931BB600CE86DC /* RecordDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6CDC1F32F931BB600CE86DC /* RecordDetailView.swift */; };
+		D6D100012F96000100CE86DC /* FixtureCameraService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6D100002F96000100CE86DC /* FixtureCameraService.swift */; };
+		D6D100072F96000100CE86DC /* camera-test-1.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = D6D100032F96000100CE86DC /* camera-test-1.jpeg */; };
+		D6D100082F96000100CE86DC /* camera-test-2.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = D6D100042F96000100CE86DC /* camera-test-2.jpeg */; };
+		D6D100092F96000100CE86DC /* camera-test-3.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = D6D100052F96000100CE86DC /* camera-test-3.jpeg */; };
+		D6D1000A2F96000100CE86DC /* camera-test-4.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = D6D100062F96000100CE86DC /* camera-test-4.jpeg */; };
 		D6E2AA012F95000100CE86DC /* ArtistRecordsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E2AA002F95000100CE86DC /* ArtistRecordsListView.swift */; };
 		D6E111112F94000000CE86DC /* CameraPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E111102F94000000CE86DC /* CameraPreviewView.swift */; };
 		D6E111132F94000000CE86DC /* RecordModel.xcdatamodeld in Resources */ = {isa = PBXBuildFile; fileRef = D6C2C9732F933A8E00AEB227 /* RecordModel.xcdatamodeld */; };
@@ -51,6 +56,11 @@
 		D6CDC2032F931BB600CE86DC /* DiscogsLookupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscogsLookupService.swift; sourceTree = "<group>"; };
 		D6CDC2052F931BB600CE86DC /* OCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCRService.swift; sourceTree = "<group>"; };
 		D6CDC2082F931BB600CE86DC /* AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogger.swift; sourceTree = "<group>"; };
+		D6D100002F96000100CE86DC /* FixtureCameraService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixtureCameraService.swift; sourceTree = "<group>"; };
+		D6D100032F96000100CE86DC /* camera-test-1.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "camera-test-1.jpeg"; sourceTree = "<group>"; };
+		D6D100042F96000100CE86DC /* camera-test-2.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "camera-test-2.jpeg"; sourceTree = "<group>"; };
+		D6D100052F96000100CE86DC /* camera-test-3.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "camera-test-3.jpeg"; sourceTree = "<group>"; };
+		D6D100062F96000100CE86DC /* camera-test-4.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "camera-test-4.jpeg"; sourceTree = "<group>"; };
 		D6E111102F94000000CE86DC /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewView.swift; sourceTree = "<group>"; };
 		D6F2EAA22F93259E00C09264 /* Record Catalog.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Record Catalog.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -146,6 +156,7 @@
 			isa = PBXGroup;
 			children = (
 				D6CDC2012F931BB600CE86DC /* CameraService.swift */,
+				D6D100002F96000100CE86DC /* FixtureCameraService.swift */,
 				D6E111102F94000000CE86DC /* CameraPreviewView.swift */,
 			);
 			path = Camera;
@@ -190,12 +201,24 @@
 			children = (
 				D6CDC1EE2F931BB600CE86DC /* App */,
 				D6CDC1FA2F931BB600CE86DC /* Features */,
+				D6D100022F96000100CE86DC /* Fixtures */,
 				D6CDC1FD2F931BB600CE86DC /* Models */,
 				D6CDC2002F931BB600CE86DC /* Persistence */,
 				D6CDC2072F931BB600CE86DC /* Services */,
 				D6CDC2092F931BB600CE86DC /* Utilities */,
 			);
 			path = RecordJacketCatalog;
+			sourceTree = "<group>";
+		};
+		D6D100022F96000100CE86DC /* Fixtures */ = {
+			isa = PBXGroup;
+			children = (
+				D6D100032F96000100CE86DC /* camera-test-1.jpeg */,
+				D6D100042F96000100CE86DC /* camera-test-2.jpeg */,
+				D6D100052F96000100CE86DC /* camera-test-3.jpeg */,
+				D6D100062F96000100CE86DC /* camera-test-4.jpeg */,
+			);
+			path = Fixtures;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -259,6 +282,10 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D6D100072F96000100CE86DC /* camera-test-1.jpeg in Resources */,
+				D6D100082F96000100CE86DC /* camera-test-2.jpeg in Resources */,
+				D6D100092F96000100CE86DC /* camera-test-3.jpeg in Resources */,
+				D6D1000A2F96000100CE86DC /* camera-test-4.jpeg in Resources */,
 				D6E111132F94000000CE86DC /* RecordModel.xcdatamodeld in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -290,6 +317,7 @@
 				D6CDC21C2F931BB600CE86DC /* RecordDetailView.swift in Sources */,
 				D6E2AA012F95000100CE86DC /* ArtistRecordsListView.swift in Sources */,
 				D6E111112F94000000CE86DC /* CameraPreviewView.swift in Sources */,
+				D6D100012F96000100CE86DC /* FixtureCameraService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

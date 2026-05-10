@@ -21,9 +21,15 @@ struct AppContainer {
 
     static let live: AppContainer = {
         let logger = AppLogger(category: "App")
+#if targetEnvironment(simulator)
+        let cameraService: CameraService = FixtureCameraService(logger: logger)
+#else
+        let cameraService: CameraService = AVCameraService(logger: logger)
+#endif
+
         return .init(
             repository: CoreDataRecordRepository(logger: logger),
-            cameraService: AVCameraService(logger: logger),
+            cameraService: cameraService,
             ocrService: VisionOCRService(logger: logger),
             discogsService: LiveDiscogsLookupService(logger: logger),
             coverImageMatcher: StubCoverImageMatchService(logger: logger),

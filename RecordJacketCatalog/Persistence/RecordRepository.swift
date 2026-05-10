@@ -30,7 +30,7 @@ final class CoreDataRecordRepository: RecordRepository {
             do {
                 let request = NSFetchRequest<NSManagedObject>(entityName: "StoredRecord")
                 request.fetchLimit = 1
-                request.predicate = NSPredicate(format: "id == %@", item.id as CVarArg)
+                request.predicate = idPredicate(for: item.id)
 
                 let existingEntity = try context.fetch(request).first
                 guard let entityDescription = NSEntityDescription.entity(forEntityName: "StoredRecord", in: context) else {
@@ -118,7 +118,7 @@ final class CoreDataRecordRepository: RecordRepository {
         let context = stack.container.viewContext
         let request = NSFetchRequest<NSManagedObject>(entityName: "StoredRecord")
         request.fetchLimit = 1
-        request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+        request.predicate = idPredicate(for: id)
 
         let result = try context.fetch(request).first.flatMap(mapManagedObject)
         print("CoreDataRecordRepository.fetch: id=\(id.uuidString), found=\(result != nil)")
@@ -136,11 +136,11 @@ final class CoreDataRecordRepository: RecordRepository {
 
     private func mapManagedObject(_ object: NSManagedObject) -> RecordItem? {
         guard
-            let id = object.value(forKey: "id") as? UUID,
-            let createdAt = object.value(forKey: "createdAt") as? Date,
-            let updatedAt = object.value(forKey: "updatedAt") as? Date,
-            let imagePath = object.value(forKey: "imagePath") as? String,
-            let rawOCRText = object.value(forKey: "rawOCRText") as? String
+            let id = uuidValue(object.value(forKey: "id")),
+            let createdAt = dateValue(object.value(forKey: "createdAt")),
+            let updatedAt = dateValue(object.value(forKey: "updatedAt")),
+            let imagePath = stringValue(object.value(forKey: "imagePath")),
+            let rawOCRText = stringValue(object.value(forKey: "rawOCRText"))
         else {
             return nil
         }
@@ -158,7 +158,7 @@ final class CoreDataRecordRepository: RecordRepository {
             createdAt: createdAt,
             updatedAt: updatedAt,
             imagePath: imagePath,
-            correctedCropPath: object.value(forKey: "correctedCropPath") as? String,
+            correctedCropPath: stringValue(object.value(forKey: "correctedCropPath")),
             rawOCRText: rawOCRText,
             ocrBoxes: decode(object.value(forKey: "ocrBoxes") as? Data, fallback: []),
             selectedTitleBoxIDs: decode(object.value(forKey: "selectedTitleBoxIDs") as? Data, fallback: []),
@@ -174,5 +174,49 @@ final class CoreDataRecordRepository: RecordRepository {
             unresolved: object.value(forKey: "unresolved") as? Bool ?? true,
             tags: decode(object.value(forKey: "tags") as? Data, fallback: [])
         )
+    }
+
+    private func idPredicate(for id: UUID) -> NSPredicate {
+        NSPredicate(format: "id == %@", id as NSUUID)
+    }
+
+    private func uuidValue(_ value: Any?) -> UUID? {
+        if let uuid = value as? UUID {
+            return uuid
+        }
+
+        if let uuid = value as? NSUUID {
+            return UUID(uuidString: uuid.uuidString)
+        }
+
+        if let string = value as? String {
+            return UUID(uuidString: string)
+        }
+
+        return nil
+    }
+
+    private func dateValue(_ value: Any?) -> Date? {
+        if let date = value as? Date {
+            return date
+        }
+
+        if let date = value as? NSDate {
+            return date as Date
+        }
+
+        return nil
+    }
+
+    private func stringValue(_ value: Any?) -> String? {
+        if let string = value as? String {
+            return string
+        }
+
+        if let string = value as? NSString {
+            return string as String
+        }
+
+        return nil
     }
 }

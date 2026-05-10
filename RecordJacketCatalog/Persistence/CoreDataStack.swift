@@ -19,6 +19,7 @@ final class CoreDataStack {
         if let description = container.persistentStoreDescriptions.first {
             description.shouldInferMappingModelAutomatically = true
             description.shouldMigrateStoreAutomatically = true
+            description.shouldAddStoreAsynchronously = false
         }
 
         container.loadPersistentStores { _, error in

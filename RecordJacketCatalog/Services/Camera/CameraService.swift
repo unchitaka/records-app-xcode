@@ -4,8 +4,14 @@ import Foundation
 protocol CameraService {
     var isSessionRunning: Bool { get }
     var previewSession: AVCaptureSession? { get }
+    var fixtureNames: [String] { get }
+    var selectedFixtureIndex: Int { get }
+    var selectedFixtureName: String? { get }
+    var selectedFixtureImageData: Data? { get }
+    var selectedFixtureFields: EditableFields? { get }
     func startSession()
     func stopSession()
+    func selectFixture(at index: Int)
     func capturePhoto(completion: @escaping (Result<Data, Error>) -> Void)
 }
 
@@ -30,6 +36,11 @@ final class AVCameraService: NSObject, CameraService {
 
     var isSessionRunning: Bool { session.isRunning }
     var previewSession: AVCaptureSession? { isConfigured ? session : nil }
+    var fixtureNames: [String] { [] }
+    var selectedFixtureIndex: Int { 0 }
+    var selectedFixtureName: String? { nil }
+    var selectedFixtureImageData: Data? { nil }
+    var selectedFixtureFields: EditableFields? { nil }
 
     func startSession() {
         sessionQueue.async {
@@ -44,6 +55,8 @@ final class AVCameraService: NSObject, CameraService {
             self.session.stopRunning()
         }
     }
+
+    func selectFixture(at index: Int) {}
 
     func capturePhoto(completion: @escaping (Result<Data, Error>) -> Void) {
         sessionQueue.async {
@@ -138,4 +151,5 @@ enum CameraError: Error {
     case emptyCapture
     case notConfigured
     case captureInProgress
+    case fixtureUnavailable
 }

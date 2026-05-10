@@ -12,6 +12,7 @@ final class CaptureViewModel: ObservableObject {
 
     @Published var isBusy = false
     @Published var errorMessage: String?
+    @Published var selectedFixtureIndex: Int
 
     let camera: CameraService
     private let ocr: OCRService
@@ -27,6 +28,7 @@ final class CaptureViewModel: ObservableObject {
         self.ocr = ocr
         self.logger = logger
         self.cropProcessor = VisionCoverCropProcessor(logger: logger)
+        self.selectedFixtureIndex = camera.selectedFixtureIndex
     }
 
     func onAppear() {
@@ -35,6 +37,24 @@ final class CaptureViewModel: ObservableObject {
 
     func onDisappear() {
         camera.stopSession()
+    }
+
+    var fixtureNames: [String] {
+        camera.fixtureNames
+    }
+
+    var selectedFixtureImage: UIImage? {
+        guard let data = camera.selectedFixtureImageData else { return nil }
+        return UIImage(data: data)
+    }
+
+    var selectedFixtureName: String? {
+        camera.selectedFixtureName
+    }
+
+    func selectFixture(at index: Int) {
+        camera.selectFixture(at: index)
+        selectedFixtureIndex = camera.selectedFixtureIndex
     }
 
     func captureAndRunOCR(onComplete: @escaping (ReviewSession) -> Void) {
@@ -73,7 +93,7 @@ final class CaptureViewModel: ObservableObject {
                         selectedTitleBoxIDs: [],
                         selectedArtistBoxIDs: [],
                         selectedCatalogBoxIDs: [],
-                        fields: ocrResult.extractedFields,
+                        fields: self.camera.selectedFixtureFields ?? ocrResult.extractedFields,
                         glareWarning: ocrResult.glareDetected,
                         lookupHistory: [],
                         candidates: [],

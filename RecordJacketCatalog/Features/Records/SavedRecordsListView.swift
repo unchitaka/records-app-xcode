@@ -4,6 +4,10 @@ import UIKit
 struct SavedRecordsListView: View {
     @StateObject var viewModel: SavedRecordsListViewModel
 
+    init(viewModel: SavedRecordsListViewModel) {
+        _viewModel = StateObject(wrappedValue: viewModel)
+    }
+
     var body: some View {
         NavigationStack {
             if viewModel.unresolvedOnly {
@@ -12,6 +16,7 @@ struct SavedRecordsListView: View {
                 artistIndexList
             }
         }
+        .onAppear { viewModel.load() }
     }
 
     private var unresolvedList: some View {
@@ -52,7 +57,6 @@ struct SavedRecordsListView: View {
         }
         .searchable(text: $viewModel.unresolvedSearchText, prompt: "Search unresolved artists")
         .navigationTitle("Unresolved")
-        .onAppear { viewModel.load() }
     }
 
     private var artistIndexList: some View {
@@ -79,7 +83,6 @@ struct SavedRecordsListView: View {
         }
         .searchable(text: $viewModel.artistSearchText, prompt: "Search artists")
         .navigationTitle("Artists")
-        .onAppear { viewModel.load() }
     }
 }
 
